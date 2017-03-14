@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>GamingAnalytics.ai</title>
+		<link href="../static/css/global.css" rel="stylesheet" type="text/css">
+		<link href="https://fonts.googleapis.com/css?family=Abril+Fatface|Raleway|Roboto+Slab" rel="stylesheet">
+	</head>
+
+	<body>
+		<div id="wrapper">
+			<header>
+				<h1>GamingAnalytics.ai</h1>
+
+				<div id="search">
+					<form action="/visualizations" method='POST' >
+	            <input type="text" name="user_input" />
+	            <input type="submit" />
+	        </form>
+				</div> <!-- close search -->
+			</header>
+
+			<div id="graph-holder-main">
+				<h1>Primary Query Output</h1>
+				{{plot1|safe}}
+			</div> <!-- close graph-holder -->
+
+			<div id="factors">
+				<h1>Primary Factor Breakdown</h1>
+				<table>
+				  <thead>
+						<th>factor</th>
+				    <th>direction</th>
+						<th>change</th>
+				  </thead>
+				  <tbody>
+						{% for factor, direction, change in mainfactors %}
+				      <tr>
+								<td>{{ factor }}</td>
+								<td>{{ direction }}</td>
+								<td>{{ change }}</td>
+				      </tr>
+				    {% endfor %}
+				  </tbody>
+				</table>
+
+			</div> <!-- close words -->
+
+			<div id="graph-holder-derived">
+				<h1>Secondary Query Output</h1>
+				{{plot2|safe}}
+			</div> <!-- close graph-holder -->
+
+			<div id="metrics">
+				<h1>Derived Metric Breakdown</h1>
+				<table>
+				  <thead>
+						<th>metric</th>
+				    <th>direction</th>
+						<th>change</th>
+				  </thead>
+				  <tbody>
+						{% for metric, direction, change in derivedmetrics %}
+				      <tr>
+								<td>{{ metric }}</td>
+								<td>{{ direction }}</td>
+								<td>{{ change }}</td>
+				      </tr>
+				    {% endfor %}
+				  </tbody>
+				</table>
+
+			</div> <!-- close words -->
+
+
+		</div> <!-- close wrapper -->
+	</body>
+</html>

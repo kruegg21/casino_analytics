@@ -1,0 +1,10 @@
+applications:
+- path: .
+  memory: 128M
+  instances: 1
+  name: gaminganalyticstest-poc-proj
+  host: gaminganalyticstest-poc-host
+  disk_quota: 1024M
+  buildpack: https://github.com/cloudfoundry/python-buildpack#v1.5.15
+  cf_stacks:
+    - cflinuxfs2

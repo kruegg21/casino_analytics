@@ -58,7 +58,6 @@ engine = helper.connect_to_database(DATABASE_USER,
                                     DATABASE_DOMAIN,
                                     DATABASE_NAME)
 
-
 def get_data_from_nl_query(nl_query):
     '''
     Args:
@@ -71,7 +70,7 @@ def get_data_from_nl_query(nl_query):
         the key is "query" and the value is the actual natural language query
     '''
     # Get JSON Watson conversations response to natual language query
-    response = get_intent_entity_from_watson(nl_query, error_checking=True)
+    response = get_intent_entity_from_watson(nl_query, error_checking = True)
 
     # Transform JSON Watson conversations response to query parameters object
     query_params = get_query_params_from_response(response, nl_query)
@@ -82,7 +81,6 @@ def get_data_from_nl_query(nl_query):
     # Place SQL results into DataFrame
     df = helper.get_sql_data(sql_query, engine)
     return df, query_params
-
 
 def create_plot_1(df):
     '''
@@ -265,7 +263,6 @@ def identify_derived_metrics():
         derivedmetrics (list): this is a list of tuples where each element
         is three items - the metric, the direction, and the percent change
     '''
-
 
 def create_derivedmetrics():
     '''

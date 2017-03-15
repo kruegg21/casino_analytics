@@ -17,13 +17,13 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import mpld3
 import numpy as np
+import seaborn as sns
 from sqlalchemy import create_engine
 import requests
 
 
 engine = \
-    create_engine(
-        'postgres://amzpgbpy:OpBSqqC5OxuTuF8Iss09lSzJkX_PlZMf@soft-pomegranate.db.elephantsql.com:5432/amzpgbpy')
+    create_engine('postgres://amzpgbpy:OpBSqqC5OxuTuF8Iss09lSzJkX_PlZMf@soft-pomegranate.db.elephantsql.com:5432/amzpgbpy')
 
 
 def create_plot_1():

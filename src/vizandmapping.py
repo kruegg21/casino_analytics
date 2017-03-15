@@ -49,10 +49,10 @@ DATABASE_DOMAIN = 'tiger@localhost'
 DATABASE_TABLE = 'logs'
 
 # Bluemix hosted database
-# DATABASE_USER = 'amzpgbpy'
-# DATABASE_NAME = 'amzpgbpy'
-# DATABASE_DOMAIN = 'OpBSqqC5OxuTuF8Iss09lSzJkX_PlZMf@soft-pomegranate.db.elephantsql.com:5432'
-# DATABASE_TABLE = 'logs'
+DATABASE_USER = 'amzpgbpy'
+DATABASE_NAME = 'amzpgbpy'
+DATABASE_DOMAIN = 'OpBSqqC5OxuTuF8Iss09lSzJkX_PlZMf@soft-pomegranate.db.elephantsql.com:5432'
+DATABASE_TABLE = 'logs'
 
 engine = helper.connect_to_database(DATABASE_USER,
                                     DATABASE_DOMAIN,

@@ -1,77 +1,123 @@
 <!DOCTYPE html>
 <html>
-	<head>
-		<title>GamingAnalytics.ai</title>
-		<link href="../static/css/global.css" rel="stylesheet" type="text/css">
-		<link href="https://fonts.googleapis.com/css?family=Abril+Fatface|Raleway|Roboto+Slab" rel="stylesheet">
-	</head>
 
-	<body>
-		<div id="wrapper">
-			<header>
-				<h1>GamingAnalytics.ai</h1>
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<!-- The above 3 meta tags *must* come first in the head; any other head
+	content must come *after* these tags -->
+	<title>GamingAnalytics.ai</title>
+	<!-- Bootstrap core CSS  -->
+	<link href="../static/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+	<!-- Load Site CSS -->
+	<link href="../static/css/global.css" rel="stylesheet">
+	<!-- Content Page CSS -->
+	<link href="../static/css/content.css" rel="stylesheet">
+</head>
 
-				<div id="search">
-					<form action="/visualizations" method='POST' >
-	            <input type="text" name="user_input" />
-	            <input type="submit" />
-	        </form>
-				</div> <!-- close search -->
-			</header>
+<body style="padding-top:50px">
+	<!-- Fixed navbar -->
+	<nav class="navbar navbar-default navbar-fixed-top navbar-green">
+		<div class="container-fluid">
+			<!-- Brand and toggle get grouped for better mobile display -->
+			<div class="navbar-header">
+				<button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+                  <span class="sr-only">Toggle navigation</span>
+                  <span class="icon-bar"></span>
+                  <span class="icon-bar"></span>
+                  <span class="icon-bar"></span>
+                </button>
+				<a class="navbar-brand" href="#">
+          				Logo
+          			</a>
+			</div>
+			<!-- Collect the nav links, forms, and other content for toggling -->
+			<div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+				<form class="navbar-form navbar-left">
+					<div class="form-group">
+						<input type="text" class="form-control form-nav form-nav-green" placeholder="I want to know...">
+					</div>
+					<button type="submit" class="btn btn-default btn-nav-green">Go</button>
+				</form>
+				<ul class="nav navbar-nav navbar-right">
+					<li class="dropdown">
+						<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Settings<span class="caret"></span></a>
+						<ul class="dropdown-menu">
+							<li><a href="#">Action</a></li>
+							<li><a href="#">Another action</a></li>
+							<li><a href="#">Something else here</a></li>
+							<li role="separator" class="divider"></li>
+							<li><a href="#">Separated link</a></li>
+						</ul>
+					</li>
+				</ul>
+			</div>
+			<!-- /.navbar-collapse -->
+		</div>
+		<!-- /.container-fluid -->
+	</nav>
 
-			<div id="graph-holder-main">
-				<h1>Primary Query Output</h1>
-				{{plot1|safe}}
-			</div> <!-- close graph-holder -->
+	<div class="answer">
+		<div class="answer answer-space"></div>
+		<div class="answer answer-text answer-statistic">
+			Statistic of Interest:
+		</div>
+		<div class="answer answer-text answer-value">
+			Value
+		</div>
+		<div class="answer answer-space"></div>
+	</div>
 
-			<div id="factors">
-				<h1>Primary Factor Breakdown</h1>
-				<table>
-				  <thead>
-						<th>factor</th>
-				    <th>direction</th>
-						<th>change</th>
-				  </thead>
-				  <tbody>
-						{% for factor, direction, change in mainfactors %}
-				      <tr>
-								<td>{{ factor }}</td>
-								<td>{{ direction }}</td>
-								<td>{{ change }}</td>
-				      </tr>
-				    {% endfor %}
-				  </tbody>
-				</table>
+	<div class="plot">
+		{{plot1|safe}}
+	</div>
 
-			</div> <!-- close words -->
+	<div id="factors">
+		<h1>Primary Factor Breakdown</h1>
+		<table>
+			<thead>
+				<th>factor</th>
+				<th>direction</th>
+				<th>change</th>
+			</thead>
+			<tbody>
+				{% for factor, direction, change in mainfactors %}
+				<tr>
+					<td>{{ factor }}</td>
+					<td>{{ direction }}</td>
+					<td>{{ change }}</td>
+				</tr>
+				{% endfor %}
+			</tbody>
+		</table>
+	</div>
 
-			<div id="graph-holder-derived">
-				<h1>Secondary Query Output</h1>
-				{{plot2|safe}}
-			</div> <!-- close graph-holder -->
+	<div class="plot">
+		<h1>Secondary Query Output</h1> {{plot2|safe}}
+	</div>
 
-			<div id="metrics">
-				<h1>Derived Metric Breakdown</h1>
-				<table>
-				  <thead>
-						<th>metric</th>
-				    <th>direction</th>
-						<th>change</th>
-				  </thead>
-				  <tbody>
-						{% for metric, direction, change in derivedmetrics %}
-				      <tr>
-								<td>{{ metric }}</td>
-								<td>{{ direction }}</td>
-								<td>{{ change }}</td>
-				      </tr>
-				    {% endfor %}
-				  </tbody>
-				</table>
+	<div id="metrics">
+		<h1>Derived Metric Breakdown</h1>
+		<table>
+			<thead>
+				<th>metric</th>
+				<th>direction</th>
+				<th>change</th>
+			</thead>
+			<tbody>
+				{% for metric, direction, change in derivedmetrics %}
+				<tr>
+					<td>{{ metric }}</td>
+					<td>{{ direction }}</td>
+					<td>{{ change }}</td>
+				</tr>
+				{% endfor %}
+			</tbody>
+		</table>
 
-			</div> <!-- close words -->
+	</div>
 
+</body>
 
-		</div> <!-- close wrapper -->
-	</body>
 </html>

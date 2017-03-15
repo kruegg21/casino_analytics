@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from generateresponsefromrequest import get_intent_entity_from_watson
 from datetime import datetime
 import json
 import pandas as pd
@@ -34,7 +35,6 @@ passed into the data service query.
 Set the defauls in the __init__ function of the query parameters class.
 '''
 
-from generateresponsefromrequest import get_intent_entity_from_watson
 
 translation_dictionary = {'revenue': 'SUM(amountbet - amountwon)',
                           'popularity': 'COUNT(*)',
@@ -58,6 +58,7 @@ translation_dictionary = {'revenue': 'SUM(amountbet - amountwon)',
                           'gold': 'GOLD',
                           'average': 'AVG',
                           'median': 'MIN'}
+
 
 class query_parameters(object):
     def __init__(self):
@@ -95,24 +96,29 @@ class query_parameters(object):
             self.metric = 'revenue'
 
         self.sql_metric = translation_dictionary.get(self.metric, self.metric)
-        self.sql_factors = [translation_dictionary.get(x, x) for x in self.factors]
+        self.sql_factors = [translation_dictionary.get(
+            x, x) for x in self.factors]
         self.sql_period = translation_dictionary.get(self.period, self.period)
-        self.sql_ordering = translation_dictionary.get(self.ordering, self.ordering)
+        self.sql_ordering = translation_dictionary.get(
+            self.ordering, self.ordering)
         self.sql_start = self.start.strftime("%Y-%m-%d-00-00-00-000")
         self.sql_stop = self.stop.strftime("%Y-%m-%d-23-59-59-999")
 
         if self.club_level:
-            self.sql_club_level = """AND clublevel = '{}'""".format(translation_dictionary.get(self.club_level, self.club_level))
+            self.sql_club_level = """AND clublevel = '{}'""".format(
+                translation_dictionary.get(self.club_level, self.club_level))
         else:
             self.sql_club_level = ''
 
         if self.statistic:
-            self.sql_statistic = """SELECT {}(metric) FROM (""".format(translation_dictionary.get(self.statistic, self.statistic))
+            self.sql_statistic = """SELECT {}(metric) FROM (""".format(
+                translation_dictionary.get(self.statistic, self.statistic))
         else:
             self.sql_statistic = ''
 
+
 @helper.timeit
-def get_query_params_from_response(response, query, error_checking = False):
+def get_query_params_from_response(response, query, error_checking=False):
     '''
     Input:
         response (JSON): this is the raw JSON response from Watson chatbot API
@@ -161,7 +167,7 @@ def get_query_params_from_response(response, query, error_checking = False):
             year = int(entity['value'][:4])
             month = int(entity['value'][5:7])
             day = int(entity['value'][8:])
-            date = datetime(year, month, day, tzinfo = TIME_ZONE)
+            date = datetime(year, month, day, tzinfo=TIME_ZONE)
             date_list.append(date)
 
     # Add factor list to query parameters
@@ -225,6 +231,7 @@ def get_query_params_from_response(response, query, error_checking = False):
     query_params.sql_string = SQL_string
     return query_params
 
+
 if __name__ == "__main__":
     # query = 'games played by area january 1st 2015?'
     query = 'what is my hourly revenue by club level, area, zone, stand, wager, manufacturer, game title'
@@ -233,6 +240,7 @@ if __name__ == "__main__":
     response = get_intent_entity_from_watson(query)
 
     query_params = get_query_params_from_response(response, query)
-    engine = helper.connect_to_database(DATABASE_USER, DATABASE_DOMAIN, DATABASE_NAME)
+    engine = helper.connect_to_database(
+        DATABASE_USER, DATABASE_DOMAIN, DATABASE_NAME)
     df = helper.get_sql_data(query_params.sql_string, engine)
     print df.head(2000)

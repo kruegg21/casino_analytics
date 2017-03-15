@@ -21,6 +21,7 @@ to the nlpapi, and get a response back in the form of
 import helper
 import requests
 
+
 def spell_check_word(word):
     '''
     Args:
@@ -43,6 +44,7 @@ def spell_check_query(query):
     spell_checked_query = query
     return spell_checked_query
 
+
 def tokenize_query(query):
     '''
     Inputs:
@@ -61,8 +63,9 @@ def tokenize_query(query):
     tokenized_query = spell_checked_query.replace(' ', '+')
     return tokenized_query
 
+
 @helper.timeit
-def get_intent_entity_from_watson(query, error_checking = False):
+def get_intent_entity_from_watson(query, error_checking=False):
     '''
     Inputs:
         query (str): this is the natural language string input that the user
@@ -72,7 +75,8 @@ def get_intent_entity_from_watson(query, error_checking = False):
         by the application
     '''
     tokenized_query = tokenize_query(query)
-    watson_string = 'https://gaminganalyticsai-host.mybluemix.net/{}'.format(tokenized_query)
+    watson_string = 'https://gaminganalyticsai-host.mybluemix.net/{}'.format(
+        tokenized_query)
     response = requests.get(watson_string)
 
     if error_checking:

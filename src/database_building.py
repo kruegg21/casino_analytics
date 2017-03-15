@@ -6,6 +6,7 @@ DATABASE_NAME = 'playlogs'
 DATABASE_DOMAIN = 'tiger@localhost'
 DATABASE_TABLE = 'logs'
 
+
 def get_database_schema(cur):
     '''
     Input:
@@ -18,14 +19,17 @@ def get_database_schema(cur):
     rows = cur.fetchall()
     return [element[0] for element in rows]
 
+
 def make_materialized_view(cur):
     cur.execute("""CREATE MATERIALIZED VIEW revenue_hourly AS
                    SELECT SUM(amountbet - amountwon) AS revenue, date_trunc('hour', logs.tmstmp) AS hour FROM logs GROUP BY 2;""")
 
+
 if __name__ == "__main__":
     # Connect to database
     try:
-        conn=psycopg2.connect("dbname='{}' user='{}'".format(DATABASE_NAME, DATABASE_USER))
+        conn = psycopg2.connect(
+            "dbname='{}' user='{}'".format(DATABASE_NAME, DATABASE_USER))
     except:
         print "I am unable to connect to the database."
     cur = conn.cursor()

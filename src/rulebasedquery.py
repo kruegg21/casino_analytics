@@ -111,119 +111,123 @@ class query_parameters(object):
         else:
             self.sql_statistic = ''
 
-@helper.timeit
-def get_query_params_from_response(response, query, error_checking = False):
-    '''
-    Input:
-        response (JSON): this is the raw JSON response from Watson chatbot API
-        query (str): this is the string of the original query
-    Output:
-        query_parameters object populated with parameters from chatbot API
-        including the SQL query
-    '''
+    @helper.timeit
+    def generate_query_params_from_response(self, query, response, error_checking = False):
+        '''
+        Input:
+            response (JSON): this is the raw JSON response from Watson chatbot API
+            query (str): this is the string of the original query
+        Output:
+            query_parameters object populated with parameters from chatbot API
+            including the SQL query
+        '''
 
-    # Turn JSON into Python dictionary
-    response_dict = json.loads(json.dumps(response))['intent_entity_mapping']
-
-    # Create query parameters object
-    query_params = query_parameters()
-
-    # Add query to query parameters object
-    query_params.query = query
-
-    # Look at intent
-    query_params.intent = response_dict['intents'][0]['intent']
-    query_params.intent_confidence = response_dict['intents'][0]['confidence']
-
-    # Look through possible entities
-    entities_list = response_dict['entities']
-
-    date_list = []
-    factor_list = []
-    for entity in entities_list:
+        # Turn JSON into Python dictionary
         if error_checking:
-            print entity
-        if entity['entity'] == 'player_factors':
-            factor_list.append(entity['value'])
-        if entity['entity'] == 'machine_factors':
-            factor_list.append(entity['value'])
-        if entity['entity'] == 'time_period':
-            query_params.period = entity['value']
-        if entity['entity'] == 'both_metrics':
-            query_params.metric = entity['value']
-        if entity['entity'] == 'top':
-            query_params.ordering = entity['value']
-        if entity['entity'] == 'club_level':
-            query_params.club_level = entity['value']
-        if entity['entity'] == 'statistics':
-            query_params.statistic = entity['value']
-        if entity['entity'] == 'sys-date':
-            year = int(entity['value'][:4])
-            month = int(entity['value'][5:7])
-            day = int(entity['value'][8:])
-            date = datetime(year, month, day, tzinfo = TIME_ZONE)
-            date_list.append(date)
+            print "Raw JSON of Watson response: {}".format(json.loads(json.dumps(response)))
+        response_dict = json.loads(json.dumps(response))['intent_entity_mapping']
 
-    # Add factor list to query parameters
-    query_params.factors = list(set(factor_list))
+        # Add query to query parameters object
+        self.query = query
 
-    # Find start and stop from date entities
-    if date_list:
-        query_params.start = min(date_list)
-        query_params.stop = max(date_list)
+        # Look at intent
+        self.intent = response_dict['intents'][0]['intent']
+        self.intent_confidence = response_dict['intents'][0]['confidence']
 
-    # Translate entities to SQL
-    query_params.translate_to_sql()
+        # Look through possible entities
+        entities_list = response_dict['entities']
 
-    # Create string formatting
-    if query_params.sql_statistic:
-        suffix = ') AS t'
-    else:
-        suffix = ''
+        date_list = []
+        factor_list = []
+        for entity in entities_list:
+            if error_checking:
+                print entity
+            if entity['entity'] == 'player_factors':
+                factor_list.append(entity['value'])
+            if entity['entity'] == 'machine_factors':
+                factor_list.append(entity['value'])
+            if entity['entity'] == 'time_period':
+                self.period = entity['value']
+            if entity['entity'] == 'both_metrics':
+                self.metric = entity['value']
+            if entity['entity'] == 'top':
+                self.ordering = entity['value']
+            if entity['entity'] == 'club_level':
+                self.club_level = entity['value']
+            if entity['entity'] == 'statistics':
+                self.statistic = entity['value']
+            if entity['entity'] == 'sys-date':
+                year = int(entity['value'][:4])
+                month = int(entity['value'][5:7])
+                day = int(entity['value'][8:])
+                date = datetime(year, month, day, tzinfo = TIME_ZONE)
+                date_list.append(date)
 
-    factors_string = ''
-    additional_group_by = ''
-    ctr = 0
-    for factor in query_params.sql_factors:
-        factors_string += ', '
-        factors_string += factor
-        additional_group_by += ', ' + str(3 + ctr)
-        ctr += 1
+        # Add factor list to query parameters
+        self.factors = list(set(factor_list))
 
-    # Execute SQL query
-    SQL_string = \
-        """{}SELECT {} AS metric, date_trunc('{}', {}.tmstmp) AS tmstmp{}
-           FROM {}
-           WHERE tmstmp >= to_timestamp('{}', 'YYYY-MM-DD-HH24-MI-SS-MS')
-           AND tmstmp <= to_timestamp('{}', 'YYYY-MM-DD-HH24-MI-SS-MS') {}
-           GROUP BY 2{}
-           {}{}""".format(query_params.sql_statistic,
-                          query_params.sql_metric,
-                          query_params.sql_period,
-                          DATABASE_TABLE,
-                          factors_string,
-                          DATABASE_TABLE,
-                          query_params.sql_start,
-                          query_params.sql_stop,
-                          query_params.sql_club_level,
-                          additional_group_by,
-                          query_params.sql_ordering,
-                          suffix)
+        # Find start and stop from date entities
+        if date_list:
+            self.start = min(date_list)
+            self.stop = max(date_list)
 
-    # SQL_string = \
-    #     """{}SELECT *
-    #        FROM {}_{}
-    #        WHERE {} >= to_timestamp('{}', 'YYYY-MM-DD-HH24-MI-SS-MS')
-    #        AND {} <= to_timestamp('{}', 'YYYY-MM-DD-HH24-MI-SS-MS')""".format(query_params.sql_statistic,
-    #                       query_params.metric,
-    #                       query_params.period,
-    #                       query_params.sql_period,
-    #                       query_params.sql_start,
-    #                       query_params.sql_period,
-    #                       query_params.sql_stop)
+        # Generate SQL query
+        self.generate_sql_query()
 
-    query_params.sql_string = SQL_string
-    return query_params
+    @helper.timeit
+    def generate_sql_query(self):
+        # Translate entities to SQL
+        self.translate_to_sql()
+
+        # Create string of factors
+        factors_string = ''
+        additional_group_by = ''
+        ctr = 0
+        for factor in self.sql_factors:
+            factors_string += ', '
+            factors_string += factor
+            additional_group_by += ', ' + str(3 + ctr)
+            ctr += 1
+
+        # Create string formatting
+        if self.sql_statistic:
+            suffix = ') AS t'
+        else:
+            suffix = ''
+
+        # Create SQL query
+        SQL_string = \
+            """{}SELECT {} AS metric, date_trunc('{}', {}.tmstmp) AS tmstmp{}
+               FROM {}
+               WHERE tmstmp >= to_timestamp('{}', 'YYYY-MM-DD-HH24-MI-SS-MS')
+               AND tmstmp <= to_timestamp('{}', 'YYYY-MM-DD-HH24-MI-SS-MS') {}
+               GROUP BY 2{}
+               {}{}""".format(self.sql_statistic,
+                              self.sql_metric,
+                              self.sql_period,
+                              DATABASE_TABLE,
+                              factors_string,
+                              DATABASE_TABLE,
+                              self.sql_start,
+                              self.sql_stop,
+                              self.sql_club_level,
+                              additional_group_by,
+                              self.sql_ordering,
+                              suffix)
+
+        # SQL_string = \
+        #     """{}SELECT *
+        #        FROM {}_{}
+        #        WHERE {} >= to_timestamp('{}', 'YYYY-MM-DD-HH24-MI-SS-MS')
+        #        AND {} <= to_timestamp('{}', 'YYYY-MM-DD-HH24-MI-SS-MS')""".format(query_params.sql_statistic,
+        #                       query_params.metric,
+        #                       query_params.period,
+        #                       query_params.sql_period,
+        #                       query_params.sql_start,
+        #                       query_params.sql_period,
+        #                       query_params.sql_stop)
+
+        self.sql_string = SQL_string
 
 if __name__ == "__main__":
     # query = 'games played by area january 1st 2015?'
@@ -232,7 +236,11 @@ if __name__ == "__main__":
     query = 'hourly revenue by club level, area, zone, stand, wager'
     response = get_intent_entity_from_watson(query)
 
-    query_params = get_query_params_from_response(response, query)
+    # Create query parameters object
+    query_params = query_parameters()
+    query_params.generate_query_params_from_response(query, response)
+
+    # Run SQL query
     engine = helper.connect_to_database(DATABASE_USER, DATABASE_DOMAIN, DATABASE_NAME)
     df = helper.get_sql_data(query_params.sql_string, engine)
     print df.head(2000)

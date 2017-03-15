@@ -1,6 +1,6 @@
 applications:
 - path: .
-  memory: 128M
+  memory: 1536M
   instances: 1
   name: gaminganalyticstest-poc-proj
   host: gaminganalyticstest-poc-host

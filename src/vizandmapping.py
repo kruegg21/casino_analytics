@@ -21,7 +21,7 @@ import numpy as np
 import seaborn as sns
 import requests
 from generateresponsefromrequest import get_intent_entity_from_watson
-from rulebasedquery import get_query_params_from_response
+from rulebasedquery import query_parameters
 
 '''
 The purpose of this module is to produce four objects through four
@@ -73,7 +73,8 @@ def get_data_from_nl_query(nl_query):
     response = get_intent_entity_from_watson(nl_query, error_checking = True)
 
     # Transform JSON Watson conversations response to query parameters object
-    query_params = get_query_params_from_response(response, nl_query)
+    query_params = query_parameters()
+    query_params.generate_query_params_from_response(nl_query, response, error_checking = True)
 
     # Get SQL query string from query parameters object
     sql_query = query_params.sql_string
@@ -82,7 +83,39 @@ def get_data_from_nl_query(nl_query):
     df = helper.get_sql_data(sql_query, engine)
     return df, query_params
 
-def create_plot_1(df):
+def create_line_graph(df, query_params):
+    '''
+    Input:
+        df (DataFrame) -- DataFrame with data we want to graph
+        query_params (query_params object) -- self explanatory
+    Output:
+        HTML string representation of Matplotlib figure
+    '''
+    # Create figure object
+    fig = plt.figure()
+
+    # Check if we are building single or multi-line graph
+    if len(df.columns) == 2:
+        # Make plot
+        plt.plot(df.tmstmp, df.metric)
+        plt.xlabel('Time')
+        plt.ylabel(query_params.metric)
+
+        # Shade under curve
+        axes = plt.gca()
+        min_y = axes.get_ylim()[0]
+        plt.fill_between(df.tmstmp.values, df.metric.values, min_y, alpha = 0.5)
+
+        # Convert to D3
+        fig_d3 = mpld3.fig_to_html(fig)
+        return fig_d3
+    else:
+        return
+
+def create_multiline_graph(df, query_params):
+    return
+
+def create_plot_1(df, query_params):
     '''
     Args:
         df (dataframe): this is the dataframe output of the initial query call
@@ -93,25 +126,29 @@ def create_plot_1(df):
         need to find a way to intelligently identify factors in the initial
         query in order to automatically multiplot these broken down plots
     '''
-    if len(df.columns) == 2:
-        fig = plt.figure()
-        plt.plot(df.tmstmp, df.metric)
-        plt.xlabel('time period')
-        plt.ylabel('metric')
-        plt.fill_between(df.tmstmp.values, df.metric.values, alpha=0.5)
-        plot1 = mpld3.fig_to_html(fig)
-    else:
-        main_factor = df.columns[2]
-        main_factors = pd.unique(df[main_factor])
-        fig = plt.figure()
-        for factor in main_factors:
-            subdf = df[df[main_factor] == factor]
-            plt.plot(subdf.tmstmp, subdf.metric, label=factor)
-        plt.fill_between(subdf.tmstmp.values, subdf.metric.values, alpha=0.5)
-        plt.xlabel('time stamp')
-        plt.ylabel('metric')
-        plt.legend(loc='best')
-        plot1 = mpld3.fig_to_html(fig)
+    # if len(df.columns) == 2:
+    #     fig = plt.figure()
+    #     plt.plot(df.tmstmp, df.metric)
+    #     plt.xlabel('time period')
+    #     plt.ylabel('metric')
+    #     axes = plt.gca()
+    #
+    #     min_y = axes.get_ylim()[0]
+    #     plt.fill_between(df.tmstmp.values, df.metric.values, min_y, alpha=0.5)
+    #     plot1 = mpld3.fig_to_html(fig)
+    # else:
+    #     main_factor = df.columns[2]
+    #     main_factors = pd.unique(df[main_factor])
+    #     fig = plt.figure()
+    #     for factor in main_factors:
+    #         subdf = df[df[main_factor] == factor]
+    #         plt.fill_between(subdf.tmstmp.values, subdf.metric.values, alpha=0.5)
+    #         plt.plot(subdf.tmstmp, subdf.metric, label=factor)
+    #     plt.xlabel('time stamp')
+    #     plt.ylabel('metric')
+    #     plt.legend(loc='best')
+    #     plot1 = mpld3.fig_to_html(fig)
+    plot1 = create_line_graph(df, query_params)
     return plot1
 
 
@@ -143,7 +180,7 @@ def create_factor_comparison_df(first_half, second_half, factor):
     factor_comparison_df.columns = ['factor', 'first_half', 'second_half']
     return factor_comparison_df
 
-
+@helper.timeit
 def get_main_factors(factor_df):
     '''
     Args:
@@ -294,7 +331,7 @@ def create_visualizations(query):
         is three items - the metric, the direction, and the percent change
     '''
     df, query_params = get_data_from_nl_query(query)
-    plot1 = create_plot_1(df)
+    plot1 = create_plot_1(df, query_params)
     query = query_params.query + \
         ', game title, manufacturer, zone, bank, stand, wager, club level'
     factor_df, query_params = get_data_from_nl_query(query)
@@ -306,34 +343,55 @@ def create_visualizations(query):
 
 
 if __name__ == "__main__":
-    query = 'what is my daily revenue by club level'
+    query = 'what is my revenue by minute'
     df, query_params = get_data_from_nl_query(query)
-
-    print df.info()
-
-    plot1 = create_plot_1(df)
-    plt.show()
-    # query = query_params.query + \
-    #     ', game title, manufacturer, zone, bank, stand, wager, club level'
-    # factor_df, query_params = get_data_from_nl_query(query)
-    #
-    #
-    # mainfactors_df = get_main_factors(factor_df)
-    # mainfactors = translate_mainfactors_df_into_list(mainfactors_df)
-    # # df_2, plot2 = create_plot_2(mainfactors, factor_df, query)
-    # top_factor = mainfactors[0][0]
-    # main_factor = find_factor_of_top_factor(top_factor, factor_df)
-    # df_2 = factor_df.groupby(['tmstmp', main_factor]).sum().reset_index()
-    # main_factors = pd.unique(df_2[main_factor])
-    # fig = plt.figure()
+    plot1 = create_plot_1(df, query_params)
     # plt.show()
 
-    # for factor in main_factors:
-    #     subdf = df_2[df_2[main_factor] == factor]
-    #     plt.plot(subdf.tmstmp, subdf.metric, label=factor)
-    # plt.xlabel('time stamp')
-    # plt.ylabel('metric')
-    # plt.legend(loc='best')
-    # plot2 = mpld3.fig_to_html(fig)
-    # derivedmetrics = create_derivedmetrics()
+    # query = query_params.query + \
+    #     ', game title, manufacturer, zone, bank, stand, wager, club level'
+    # query = query_params.query + \
+    #     ', game title, club level'
+
+    # Get JSON Watson conversations response to natual language query
+    # response = get_intent_entity_from_watson(query)
+
+    # Transform JSON Watson conversations response to query parameters object
+    # query_params = query_parameters()
+    # query_params.generate_query_params_from_response(nl_query, response, error_checking = True)
+
+    query_params.factors.append('clublevel')
+    query_params.factors.append('assettitle')
+
+    query_params.generate_sql_query()
+
+    print query_params
+
+    # Get SQL query string from query parameters object
+    sql_query = query_params.sql_string
+
+    # Place SQL results into DataFrame
+    factor_df = helper.get_sql_data(sql_query, engine)
+
+    print factor_df.head()
+    raw_input()
+
+    mainfactors_df = get_main_factors(factor_df)
+    mainfactors = translate_mainfactors_df_into_list(mainfactors_df)
+    # df_2, plot2 = create_plot_2(mainfactors, factor_df, query)
+    top_factor = mainfactors[0][0]
+    main_factor = find_factor_of_top_factor(top_factor, factor_df)
+    df_2 = factor_df.groupby(['tmstmp', main_factor]).sum().reset_index()
+    main_factors = pd.unique(df_2[main_factor])
+    fig = plt.figure()
+    plt.show()
+
+    for factor in main_factors:
+        subdf = df_2[df_2[main_factor] == factor]
+        plt.plot(subdf.tmstmp, subdf.metric, label=factor)
+    plt.xlabel('time stamp')
+    plt.ylabel('metric')
+    plt.legend(loc='best')
+    plot2 = mpld3.fig_to_html(fig)
+    derivedmetrics = create_derivedmetrics()
     # plot1, plot2, mainfactors, derivedmetrics = create_visualizations(query)

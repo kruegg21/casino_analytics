@@ -53,9 +53,7 @@
 					</li>
 				</ul>
 			</div>
-			<!-- /.navbar-collapse -->
 		</div>
-		<!-- /.container-fluid -->
 	</nav>
 
 	<div class="answer">
@@ -69,53 +67,66 @@
 		<div class="answer answer-space"></div>
 	</div>
 
-	<div class="plot">
-		{{plot1|safe}}
-	</div>
+	<div id="wrapper">
+		<header>
+			<h1>GamingAnalytics.ai</h1>
 
-	<div id="factors">
-		<h1>Primary Factor Breakdown</h1>
-		<table>
-			<thead>
-				<th>factor</th>
-				<th>direction</th>
-				<th>change</th>
-			</thead>
-			<tbody>
-				{% for factor, direction, change in mainfactors %}
-				<tr>
-					<td>{{ factor }}</td>
-					<td>{{ direction }}</td>
-					<td>{{ change }}</td>
-				</tr>
-				{% endfor %}
-			</tbody>
-		</table>
-	</div>
+			<div id="search">
+				<form action="/visualizations" method='POST'>
+					<input type="text" name="user_input" />
+					<input type="submit" />
+				</form>
+			</div>
+		</header>
 
-	<div class="plot">
-		<h1>Secondary Query Output</h1> {{plot2|safe}}
-	</div>
+		<div id="graph-holder-main">
+			<h1>Primary Query Output</h1> {{plot1|safe}}
+		</div>
 
-	<div id="metrics">
-		<h1>Derived Metric Breakdown</h1>
-		<table>
-			<thead>
-				<th>metric</th>
-				<th>direction</th>
-				<th>change</th>
-			</thead>
-			<tbody>
-				{% for metric, direction, change in derivedmetrics %}
-				<tr>
-					<td>{{ metric }}</td>
-					<td>{{ direction }}</td>
-					<td>{{ change }}</td>
-				</tr>
-				{% endfor %}
-			</tbody>
-		</table>
+		<div id="factors">
+			<h1>Primary Factor Breakdown</h1>
+			<table>
+				<thead>
+					<th>factor</th>
+					<th>direction</th>
+					<th>change</th>
+				</thead>
+				<tbody>
+					{% for factor, direction, change in mainfactors %}
+					<tr>
+						<td>{{ factor }}</td>
+						<td>{{ direction }}</td>
+						<td>{{ change }}</td>
+					</tr>
+					{% endfor %}
+				</tbody>
+			</table>
 
+		</div>
+
+		<div id="graph-holder-derived">
+			<h1>Secondary Query Output</h1> {{plot2|safe}}
+		</div>
+
+		<div id="metrics">
+			<h1>Derived Metric Breakdown</h1>
+			<table>
+				<thead>
+					<th>metric</th>
+					<th>direction</th>
+					<th>change</th>
+				</thead>
+				<tbody>
+					{% for metric, direction, change in derivedmetrics %}
+					<tr>
+						<td>{{ metric }}</td>
+						<td>{{ direction }}</td>
+						<td>{{ change }}</td>
+					</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+		</div>
 	</div>
 
 </body>

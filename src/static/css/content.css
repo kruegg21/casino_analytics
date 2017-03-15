@@ -1,0 +1,21 @@
+.form-nav {
+  width: 430px !important;
+}
+
+.answer {
+  text-align: left;
+  font-size: 30px;
+  line-height: 30px;
+}
+
+.answer-space {
+  height: 15px;
+}
+
+.answer-text {
+  display: inline;
+}
+
+.answer-statistic {
+  padding-left: 50px;
+}

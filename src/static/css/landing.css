@@ -1,0 +1,33 @@
+header {
+  text-align: center;
+}
+
+header .intro-text {
+  padding-top: 100px;
+  padding-bottom: 50px;
+}
+
+header .intro-text .intro-heading {
+  font-family: Montserrat,"Helvetica Neue",Helvetica,Arial,sans-serif;
+  font-weight: 700;
+  font-size: 80px;
+  line-height: 80px;
+  margin-bottom: 40px;
+  color: #708e3e;
+}
+
+.form-landing-green {
+  background-color: #d6f4a4;
+  border-color: #708e3e;
+}
+
+.form-landing-green::-webkit-input-placeholder { color: #708e3e; }
+.form-landing-green:-moz-placeholder { color: #708e3e; }
+.form-landing-green::-moz-placeholder { color: #708e3e; }
+.form-landing-green:-ms-input-placeholder { color: #708e3e; }
+
+.btn-landing-green {
+  background-color: #d6f4a4;
+  border-color: #708e3e;
+  color: #708e3e;
+}

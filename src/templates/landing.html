@@ -60,12 +60,14 @@
 				<div class="input">
 					<!-- /.col-lg-6 -->
 					<div class="center-block col-lg-6" style="float: none">
-						<div class="input-group">
-							<input type="text" class="form-control form-landing-green" placeholder="I want to know...">
-							<span class="input-group-btn">
-				        <button class="btn btn-default btn-landing-green" type="button">Go</button>
+						<form action="/visualizations" method="POST">
+							<div class="input-group">
+								<input type="text" name="user_input" class="form-control form-landing-green" placeholder="I want to know...">
+								<span class="input-group-btn">
+				        <button class="btn btn-default btn-landing-green" id="btn-query" type="submit">Go</button>
 				      </span>
-						</div>
+							</div>
+						</form>
 						<!-- /input-group -->
 					</div>
 					<!-- /.col-lg-6 -->

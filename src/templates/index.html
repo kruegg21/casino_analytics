@@ -34,9 +34,9 @@
 			</div>
 			<!-- Collect the nav links, forms, and other content for toggling -->
 			<div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
-				<form class="navbar-form navbar-left">
+				<form class="navbar-form navbar-left" action="/visualizations" method="POST">
 					<div class="form-group">
-						<input type="text" class="form-control form-nav form-nav-green" placeholder="I want to know...">
+						<input type="text" name="user_input" class="form-control form-nav form-nav-green" placeholder="I want to know...">
 					</div>
 					<button type="submit" class="btn btn-default btn-nav-green">Go</button>
 				</form>
@@ -68,16 +68,6 @@
 	</div>
 
 	<div id="wrapper">
-		<header>
-			<h1>GamingAnalytics.ai</h1>
-
-			<div id="search">
-				<form action="/visualizations" method='POST'>
-					<input type="text" name="user_input" />
-					<input type="submit" />
-				</form>
-			</div>
-		</header>
 
 		<div id="graph-holder-main">
 			<h1>Primary Query Output</h1> {{plot1|safe}}

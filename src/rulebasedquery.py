@@ -61,6 +61,8 @@ translation_dictionary = {'net'
                           'median': 'MIN'}
 
 DEFAULT_METRIC = 'revenue'
+DEFAULT_START = None
+DEFAULT_STOP = None
 
 class query_parameters(object):
     def __init__(self):

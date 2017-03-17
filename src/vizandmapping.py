@@ -55,7 +55,7 @@ influential metric changes over the time period specified
 # Read password from external file
 with open('passwords.json') as data_file:
     data = json.load(data_file)
-
+    
 DATABASE_HOST = 'soft-feijoa.db.elephantsql.com'
 DATABASE_PORT = '5432'
 DATABASE_NAME = 'ohdimqey'
@@ -166,6 +166,19 @@ def create_plot_2(mainfactors, factor_df, nl_query):
     plot2 = mpld3.fig_to_html(fig)
     return df_2, plot2
 
+<<<<<<< HEAD
+=======
+
+def identify_derived_metrics():
+    '''
+    Args:
+    Returns:
+        derivedmetrics (list): this is a list of tuples where each element
+        is three items - the metric, the direction, and the percent change
+    '''
+
+
+>>>>>>> caacec4c29fa7e0660b4cf281181e28dd406d969
 def create_derivedmetrics():
     '''
     Args:

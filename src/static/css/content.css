@@ -16,3 +16,8 @@
 .answer-statistic {
   padding-left: 50px;
 }
+
+.table-striped>tbody>tr:nth-child(odd)>td,
+.table-striped>tbody>tr:nth-child(odd)>th {
+   background-color: #f1fbe0;
+ }

@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 import pandas as pd
 import psycopg2
@@ -36,7 +36,8 @@ Set the defauls in the __init__ function of the query parameters class.
 
 from generateresponsefromrequest import get_intent_entity_from_watson
 
-translation_dictionary = {'revenue': 'SUM(amountbet - amountwon)',
+translation_dictionary = {'net'
+                          'revenue': 'SUM(amountbet - amountwon)',
                           'popularity': 'COUNT(*)',
                           'games played': 'SUM(gamesplayed)',
                           'payout rate': 'SUM(amountwon) / SUM(amountbet)',
@@ -47,7 +48,7 @@ translation_dictionary = {'revenue': 'SUM(amountbet - amountwon)',
                           'weekly': 'week',
                           'monthly': 'month',
                           'yearly': 'year',
-                          'by minute': 'minute',
+                          'by_minute': 'minute',
                           'hourly': 'hour',
                           'best': 'ORDER BY 1 DESC',
                           'worst': 'ORDER BY 1 ASC',
@@ -59,25 +60,57 @@ translation_dictionary = {'revenue': 'SUM(amountbet - amountwon)',
                           'average': 'AVG',
                           'median': 'MIN'}
 
+DEFAULT_METRIC = 'revenue'
+
 class query_parameters(object):
     def __init__(self):
         self.query = 'Nothing here'
         self.intent = 'metric_by_factor_by_time_period'
         self.intent_confidence = 0.0
+
+        # Metric
         self.metric = None
+
+        # Factor(s)
         self.factors = []
+
+        # Range
         self.start = datetime.strptime('2015-01-01', '%Y-%m-%d')
         self.stop = datetime.strptime('2015-01-02', '%Y-%m-%d')
+
+        # Period
         self.period = None
+
+        # Ordering
         self.ordering = 'date'
-        self.club_level = None
+
+        # Aggregate Statistic
         self.statistic = None
+
+        # Specific Factors
+        self.club_level = None
+        self.area = None
+        self.game_title = None
+        self.manufacturer = None
+        self.stand = None
+        self.zone = None
+        self.bank = None
+
+        # SQL string
         self.sql_string = None
+
+        # SQL parameters
+        self.sql_metric = None
+        self.sql_factors = []
+        self.sql_period = None
+        self.sql_ordering = None
+        self.sql_start = None
+        self.sql_stop = None
 
     def __str__(self):
         return "Given query: {}\n".format(self.query) + \
                "Intent: {} with confidence of {}\n".format(self.intent, self.intent_confidence) + \
-               "Factor: {}\n".format(self.factors) + \
+               "Factors: {}\n".format(self.factors) + \
                "Period: {}\n".format(self.period) + \
                "Metric: {}\n".format(self.metric) + \
                "Start: {}\n".format(self.start) + \
@@ -85,21 +118,36 @@ class query_parameters(object):
                "Ordering: {}\n".format(self.ordering) + \
                "Club Level: {}\n".format(self.club_level) + \
                "Statistic: {}\n".format(self.statistic) + \
-               "SQL Query: {}\n".format(self.sql_string)
+               "SQL Query: {}\n\n".format(self.sql_string) + \
+               "SQL metric: {}\n".format(self.sql_metric) + \
+               "SQL factors: {}\n".format(self.sql_factors) + \
+               "SQL period: {}\n".format(self.sql_period) + \
+               "SQL ordering: {}\n".format(self.sql_ordering) + \
+               "SQL start: {}\n".format(self.sql_start) + \
+               "SQL stop: {}\n".format(self.sql_stop)
 
     def translate_to_sql(self):
-        if not self.period:
-            self.period = 'daily'
+        if not self.sql_period:
+            self.sql_period = translation_dictionary.get(self.period, self.period)
 
-        if not self.metric:
-            self.metric = 'revenue'
+        if not self.sql_metric:
+            if not self.metric:
+                self.sql_metric = translation_dictionary.get(DEFAULT_METRIC, DEFAULT_METRIC)
+            else:
+                self.sql_metric = translation_dictionary.get(self.metric, self.metric)
 
-        self.sql_metric = translation_dictionary.get(self.metric, self.metric)
-        self.sql_factors = [translation_dictionary.get(x, x) for x in self.factors]
-        self.sql_period = translation_dictionary.get(self.period, self.period)
-        self.sql_ordering = translation_dictionary.get(self.ordering, self.ordering)
-        self.sql_start = self.start.strftime("%Y-%m-%d-00-00-00-000")
-        self.sql_stop = self.stop.strftime("%Y-%m-%d-23-59-59-999")
+        self.sql_factors += [translation_dictionary.get(x, x) for x in self.factors]
+        self.sql_factors = list(set(self.sql_factors))
+        self.sql_factors.sort()
+
+        if not self.sql_ordering:
+            self.sql_ordering = translation_dictionary.get(self.ordering, self.ordering)
+
+        if not self.sql_start:
+            self.sql_start = self.start.strftime("%Y-%m-%d-00-00-00-000")
+
+        if not self.sql_stop:
+            self.sql_stop = self.stop.strftime("%Y-%m-%d-23-59-59-999")
 
         if self.club_level:
             self.sql_club_level = """AND clublevel = '{}'""".format(translation_dictionary.get(self.club_level, self.club_level))
@@ -170,12 +218,56 @@ class query_parameters(object):
         if date_list:
             self.start = min(date_list)
             self.stop = max(date_list)
+        self.stop = self.stop + timedelta(hours = 23,
+                                          minutes = 59,
+                                          seconds = 59,
+                                          milliseconds = 999)
 
-        # Generate SQL query
-        self.generate_sql_query()
+    # @helper.timeit
+    # def generate_sql_query(self):
+    #     # Translate entities to SQL
+    #     self.translate_to_sql()
+    #
+    #     # Create string of factors
+    #     factors_string = ''
+    #     additional_group_by = ''
+    #     ctr = 0
+    #     for factor in self.sql_factors:
+    #         factors_string += ', '
+    #         factors_string += factor
+    #         additional_group_by += ', ' + str(3 + ctr)
+    #         ctr += 1
+    #
+    #     # Create string formatting
+    #     if self.sql_statistic:
+    #         suffix = ') AS t'
+    #     else:
+    #         suffix = ''
+    #
+    #     # Create SQL query
+    #     SQL_string = \
+    #         """{}SELECT {} AS metric, date_trunc('{}', {}.tmstmp) AS tmstmp{}
+    #            FROM {}
+    #            WHERE tmstmp >= to_timestamp('{}', 'YYYY-MM-DD-HH24-MI-SS-MS')
+    #            AND tmstmp <= to_timestamp('{}', 'YYYY-MM-DD-HH24-MI-SS-MS') {}
+    #            GROUP BY 2{}
+    #            {}{}""".format(self.sql_statistic,
+    #                           self.sql_metric,
+    #                           self.sql_period,
+    #                           DATABASE_TABLE,
+    #                           factors_string,
+    #                           DATABASE_TABLE,
+    #                           self.sql_start,
+    #                           self.sql_stop,
+    #                           self.sql_club_level,
+    #                           additional_group_by,
+    #                           self.sql_ordering,
+    #                           suffix)
+    #
+    #     self.sql_string = SQL_string
 
     @helper.timeit
-    def generate_sql_query(self):
+    def generate_sql_query(self, error_checking = False):
         # Translate entities to SQL
         self.translate_to_sql()
 
@@ -195,52 +287,55 @@ class query_parameters(object):
         else:
             suffix = ''
 
+        # Find correct table to get data from
+        title_string = self.sql_period + '_factored_by'
+        for factor in self.sql_factors:
+            title_string += '_'
+            title_string += factor
+        if error_checking:
+            print "Database table name: {}".format(title_string)
+
         # Create SQL query
         SQL_string = \
-            """{}SELECT {} AS metric, date_trunc('{}', {}.tmstmp) AS tmstmp{}
+            """{}SELECT {} AS metric, {} AS tmstmp{}
                FROM {}
-               WHERE tmstmp >= to_timestamp('{}', 'YYYY-MM-DD-HH24-MI-SS-MS')
-               AND tmstmp <= to_timestamp('{}', 'YYYY-MM-DD-HH24-MI-SS-MS') {}
-               GROUP BY 2{}
+               WHERE {} >= to_timestamp('{}', 'YYYY-MM-DD-HH24-MI-SS-MS')
+               AND {} <= to_timestamp('{}', 'YYYY-MM-DD-HH24-MI-SS-MS')
                {}{}""".format(self.sql_statistic,
-                              self.sql_metric,
+                              self.metric,
                               self.sql_period,
-                              DATABASE_TABLE,
                               factors_string,
-                              DATABASE_TABLE,
+                              title_string,
+                              self.sql_period,
                               self.sql_start,
+                              self.sql_period,
                               self.sql_stop,
-                              self.sql_club_level,
-                              additional_group_by,
                               self.sql_ordering,
                               suffix)
-
-        # SQL_string = \
-        #     """{}SELECT *
-        #        FROM {}_{}
-        #        WHERE {} >= to_timestamp('{}', 'YYYY-MM-DD-HH24-MI-SS-MS')
-        #        AND {} <= to_timestamp('{}', 'YYYY-MM-DD-HH24-MI-SS-MS')""".format(query_params.sql_statistic,
-        #                       query_params.metric,
-        #                       query_params.period,
-        #                       query_params.sql_period,
-        #                       query_params.sql_start,
-        #                       query_params.sql_period,
-        #                       query_params.sql_stop)
+        if error_checking:
+            print "SQL string: {}".format(SQL_string)
 
         self.sql_string = SQL_string
+
+
 
 if __name__ == "__main__":
     # query = 'games played by area january 1st 2015?'
     query = 'what is my hourly revenue by club level, area, zone, stand, wager, manufacturer, game title'
     query = 'what is the payout rate for january 2 2015'
-    query = 'hourly revenue by club level, area, zone, stand, wager'
+    query = 'by minute january 2nd 2015 revenue by club level, bank, zone'
     response = get_intent_entity_from_watson(query)
 
     # Create query parameters object
     query_params = query_parameters()
     query_params.generate_query_params_from_response(query, response)
+    query_params.generate_sql_query(error_checking = True)
 
     # Run SQL query
     engine = helper.connect_to_database(DATABASE_USER, DATABASE_DOMAIN, DATABASE_NAME)
+    df = helper.get_sql_data("""SELECT * FROM logs LIMIT 10;""", engine)
+    print df.head()
+    raw_input()
     df = helper.get_sql_data(query_params.sql_string, engine)
-    print df.head(2000)
+    print df.head(10)
+    print len(df)

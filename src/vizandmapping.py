@@ -14,14 +14,17 @@
 # limitations under the License.
 
 import helper
+import json
 import pandas as pd
 import matplotlib.pyplot as plt
 import mpld3
 import numpy as np
 import seaborn as sns
 import requests
+from datetime import timedelta
+from sqlalchemy import create_engine
 from generateresponsefromrequest import get_intent_entity_from_watson
-from rulebasedquery import query_parameters
+from rulebasedquery import query_parameters, translation_dictionary
 
 '''
 The purpose of this module is to produce four objects through four
@@ -43,22 +46,32 @@ influential metric changes over the time period specified
 '''
 
 # Local database
-DATABASE_USER = 'test'
-DATABASE_NAME = 'playlogs'
-DATABASE_DOMAIN = 'tiger@localhost'
-DATABASE_TABLE = 'logs'
+# DATABASE_USER = 'test'
+# DATABASE_NAME = 'playlogs'
+# DATABASE_DOMAIN = 'tiger@localhost'
+# DATABASE_TABLE = 'logs'
 
-# Bluemix hosted database
-DATABASE_USER = 'amzpgbpy'
-DATABASE_NAME = 'amzpgbpy'
-DATABASE_DOMAIN = 'OpBSqqC5OxuTuF8Iss09lSzJkX_PlZMf@soft-pomegranate.db.elephantsql.com:5432'
-DATABASE_TABLE = 'logs'
+# Read password from external file
+with open('passwords.json') as data_file:
+    data = json.load(data_file)
 
-engine = helper.connect_to_database(DATABASE_USER,
-                                    DATABASE_DOMAIN,
-                                    DATABASE_NAME)
+DATABASE_HOST = 'soft-feijoa.db.elephantsql.com'
+DATABASE_PORT = '5432'
+DATABASE_NAME = 'ohdimqey'
+DATABASE_USER = 'ohdimqey'
+DATABASE_PASSWORD = data['DATABASE_PASSWORD']
 
-def get_data_from_nl_query(nl_query):
+# Connect to database
+database_string = 'postgres://{}:{}@{}:{}/{}'.format(DATABASE_USER,
+                                                     DATABASE_PASSWORD,
+                                                     DATABASE_HOST,
+                                                     DATABASE_PORT,
+                                                     DATABASE_NAME)
+engine = create_engine(database_string)
+
+main_factors = ['bank', 'zone', 'clublevel', 'area']
+
+def get_data_from_nl_query(nl_query, error_checking = False):
     '''
     Args:
         nl_query (str): this is a natural language query
@@ -70,20 +83,69 @@ def get_data_from_nl_query(nl_query):
         the key is "query" and the value is the actual natural language query
     '''
     # Get JSON Watson conversations response to natual language query
-    response = get_intent_entity_from_watson(nl_query, error_checking = True)
+    response = get_intent_entity_from_watson(nl_query, error_checking = False)
 
     # Transform JSON Watson conversations response to query parameters object
     query_params = query_parameters()
-    query_params.generate_query_params_from_response(nl_query, response, error_checking = True)
+    query_params.generate_query_params_from_response(nl_query, response, error_checking = False)
+
+    # Check to see if a period is specified, if not impute period based on range
+    if not query_params.period:
+        period = None
+        time_range = query_params.stop - query_params.start
+        if time_range > timedelta(hours = 23, minutes = 59, seconds = 59):
+            # Range is greater than a day
+            print "Range is greater than a day" if error_checking else None
+            if time_range > timedelta(days = 6, hours = 23, minutes = 59, seconds = 59):
+                # Range is greater than a week
+                print "Range is greater than a week" if error_checking else None
+                if time_range > timedelta(days = 27, hours = 23, minutes = 59, seconds = 59):
+                    # Range is greater than a month
+                    print "Range is greater than a month" if error_checking else None
+                    if time_range > timedelta(days = 364, hours = 23, minutes = 59, seconds = 59):
+                        # Range is greater than a year
+                        print "Range is greater than a year" if error_checking else None
+                        # Segment by months
+                        period = 'monthly'
+                    else:
+                        # Range is less than a year
+                        print "Range is less than a year" if error_checking else None
+                        # Segment by weeks
+                        period = 'weekly'
+                else:
+                    # Range is less than a month
+                    print "Range is less than a month" if error_checking else None
+                    # Segment by days
+                    period = 'daily'
+            else:
+                # Range is less than week
+                print "Range is less than a week" if error_checking else None
+                # Segment by hour
+                period = 'hourly'
+        else:
+            print "Range is smaller than a day" if error_checking else None
+            # Segment by minute
+            period = 'by_minute'
+
+        # Add imputed period
+        query_params.sql_period = translation_dictionary[period]
+
+    # Add main factors
+    query_params.sql_factors += main_factors
+
+    # Generate SQL query
+    query_params.generate_sql_query(error_checking = True)
 
     # Get SQL query string from query parameters object
     sql_query = query_params.sql_string
+    if error_checking:
+        print "SQL query string: {}".format(sql_query)
 
     # Place SQL results into DataFrame
     df = helper.get_sql_data(sql_query, engine)
     return df, query_params
 
-def create_line_graph(df, query_params):
+def create_line_graph(df, query_params, title):
     '''
     Input:
         df (DataFrame) -- DataFrame with data we want to graph
@@ -93,29 +155,51 @@ def create_line_graph(df, query_params):
     '''
     # Create figure object
     fig = plt.figure()
+    axes = plt.gca()
 
     # Check if we are building single or multi-line graph
     if len(df.columns) == 2:
-        # Make plot
+        # Make plot for single-line graph
         plt.plot(df.tmstmp, df.metric)
         plt.xlabel('Time')
         plt.ylabel(query_params.metric)
 
         # Shade under curve
-        axes = plt.gca()
         min_y = axes.get_ylim()[0]
         plt.fill_between(df.tmstmp.values, df.metric.values, min_y, alpha = 0.5)
-
-        # Convert to D3
-        fig_d3 = mpld3.fig_to_html(fig)
-        return fig_d3
     else:
-        return
+        # Plot multi-line graph
+        factor = translation_dictionary.get(query_params.factors[0], query_params.factors[0])
+        for unique_item in df[factor].unique():
+            print unique_item
+            df_subgroup = df[df[factor] == unique_item]
+
+            # Make plot
+            plt.plot(df_subgroup.tmstmp, df_subgroup.metric, label = unique_item)
+
+            # Shade under curve
+            # axes = plt.gca()
+            # min_y = axes.get_ylim()[0]
+            # plt.fill_between(df_subgroup.tmstmp.values, df_subgroup.metric.values, min_y, alpha = 0.5)
+
+    # Label axes
+    plt.xlabel('Time')
+    plt.ylabel(query_params.metric)
+
+    # Add legend
+    plt.legend()
+
+    # Add title
+    axes.set_title(title)
+
+    # Convert to D3
+    fig_d3 = mpld3.fig_to_html(fig)
+    return fig_d3
 
 def create_multiline_graph(df, query_params):
     return
 
-def create_plot_1(df, query_params):
+def create_plot_1(df, query_params, title):
     '''
     Args:
         df (dataframe): this is the dataframe output of the initial query call
@@ -148,7 +232,7 @@ def create_plot_1(df, query_params):
     #     plt.ylabel('metric')
     #     plt.legend(loc='best')
     #     plot1 = mpld3.fig_to_html(fig)
-    plot1 = create_line_graph(df, query_params)
+    plot1 = create_line_graph(df, query_params, title)
     return plot1
 
 
@@ -219,7 +303,7 @@ def get_main_factors(factor_df):
     mainfactors_df.drop('index', axis=1, inplace=True)
     return mainfactors_df
 
-
+@helper.timeit
 def translate_mainfactors_df_into_list(mainfactors_df):
     '''
     Args:
@@ -330,22 +414,127 @@ def create_visualizations(query):
         derivedmetrics (list): this is a list of tuples where each element
         is three items - the metric, the direction, and the percent change
     '''
+    # Pull down data from database
     df, query_params = get_data_from_nl_query(query)
-    plot1 = create_plot_1(df, query_params)
-    query = query_params.query + \
-        ', game title, manufacturer, zone, bank, stand, wager, club level'
-    factor_df, query_params = get_data_from_nl_query(query)
-    mainfactors_df = get_main_factors(factor_df)
+
+    # Decide what to do based on query parameters
+    """
+    # Metric
+    self.metric = None
+
+    # Factor(s)
+    self.factors = []
+
+    # Range
+    self.start = datetime.strptime('2015-01-01', '%Y-%m-%d')
+    self.stop = datetime.strptime('2015-01-02', '%Y-%m-%d')
+
+    # Period
+    self.period = None
+
+    # Ordering
+    self.ordering = 'date'
+
+    # Aggregate Statistic
+    self.statistic = None
+
+    # Specific Factors
+    self.club_level = None
+    self.area = None
+    self.game_title = None
+    self.manufacturer = None
+    self.stand = None
+    self.zone = None
+    self.bank = None
+    """
+    # All queries will have a metric and range (if none provided we will infer)
+    # M: always included (if not infer)
+	# F: indicates multi-line graph or multi-dimensional histogram
+	# SF: indicates filtering
+	# R: always included (if not infer)
+	# P: indicates which materialized view to pull from, if missing indicates a
+    #    single value answer should be provided
+	# O: indicates histogram
+	# S:
+    plot1 = None
+    print query_params
+    if query_params.ordering == 'date':
+        # Ordering is by date, so show line graph
+        if query_params.period:
+            # No need to provide single value metric
+            title = 'Time metric'
+            df_1 = helper.sum_by_time(df, None)
+            plot1 = create_plot_1(df_1, query_params, title)
+            if query_params.factors:
+                # Multi-line graph
+                title = 'Time metric'
+                factor = translation_dictionary.get(query_params.factors[0], query_params.factors[0])
+                df_1 = helper.sum_by_time(df, factor)
+                plot1 = create_plot_1(df_1, query_params, title)
+            else:
+                # Single line graph
+                df_1 = helper.sum_by_time(df, None)
+                plot1 = create_plot_1(df_1, query_params, title)
+        else:
+            if query_params.factors:
+                # Multi-line graph
+                title = 'Time metric'
+                factor = translation_dictionary.get(query_params.factors[0], query_params.factors[0])
+                df_1 = helper.sum_by_time(df, factor)
+                plot1 = create_plot_1(df_1, query_params, title)
+            else:
+                # Single line graph
+                df_1 = helper.sum_by_time(df, None)
+                plot1 = create_plot_1(df_1, query_params, title)
+            df_1 = helper.sum_by_time(df, None)
+            print df_1.head()
+
+            # Calculate metric total we are interest in
+            total = df_1['metric'].sum()
+            title = 'Total {} from {} to {} is {}'.format(query_params.metric,
+                                                          query_params.start,
+                                                          query_params.stop,
+                                                          total)
+            plot1 = create_plot_1(df_1, query_params, title)
+    #     if query_params.period:
+    #         if query_params.factors:
+    #             if query_params.club_level or query_params.area or \
+    #                query_params.game_title or query_params.manufacturer or \
+    #                query_params.stand or query_params.zone or query_params.bank:
+    #                # What is the daily revenue for males by club level?
+    #                # Get data divided by important factors and aggregate / filter
+    #                # Multi-line graph
+    #                pass
+    #             else:
+    #                 # What is the daily revenue by club level?
+    #                 # Get data divided by important factors and aggregate
+    #                 # Multi-line graph
+    #                 pass
+    #
+    #             # What is revenue by club level January?
+    #             # Get data divided by important factors and aggregate
+    #             # Multi-line graph
+    #         # What is the revenue for January daily?
+    #         # Get data divided by important factors and aggregate
+    #     else:
+    #         # What is revenue today?
+    #         # Infer best segmented data
+    #         # Possible segments are by minute, hourly, daily, weekly, monthly, yearly
+    #         pass
+    else:
+        # Histogram deal with this later
+        pass
+
+    mainfactors_df = get_main_factors(df)
     mainfactors = translate_mainfactors_df_into_list(mainfactors_df)
-    df_2, plot2 = create_plot_2(mainfactors, factor_df, query)
+    df_2, plot2 = create_plot_2(mainfactors, df, query)
     derivedmetrics = create_derivedmetrics()
     return plot1, plot2, mainfactors[:15], derivedmetrics
 
-
 if __name__ == "__main__":
-    query = 'what is my revenue by minute'
-    df, query_params = get_data_from_nl_query(query)
-    plot1 = create_plot_1(df, query_params)
+    query = 'what is my revenue january 1st 2015 by area'
+    plot1, plot2, mainfactors, derivedmetrics = create_visualizations(query)
+
     # plt.show()
 
     # query = query_params.query + \
@@ -359,9 +548,6 @@ if __name__ == "__main__":
     # Transform JSON Watson conversations response to query parameters object
     # query_params = query_parameters()
     # query_params.generate_query_params_from_response(nl_query, response, error_checking = True)
-
-    query_params.factors.append('clublevel')
-    query_params.factors.append('assettitle')
 
     query_params.generate_sql_query()
 

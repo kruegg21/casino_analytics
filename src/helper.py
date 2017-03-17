@@ -24,3 +24,10 @@ def connect_to_database(user, domain, name):
 @timeit
 def get_sql_data(query, engine):
     return pd.read_sql_query(query, con = engine)
+
+@timeit
+def sum_by_time(df, factor):
+    if factor:
+        return df.groupby(['tmstmp', factor], as_index = False).sum()
+    else:
+        return df.groupby(['tmstmp'], as_index = False).sum()

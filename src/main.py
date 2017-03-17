@@ -74,7 +74,7 @@ def impute_period(query_params, error_checking = False):
 
         # Add imputed period
         query_params.sql_period = translation_dictionary[period]
-        return query_params
+    return query_params
 
 def get_data_from_nl_query(nl_query, error_checking = False):
     '''
@@ -112,6 +112,9 @@ def get_data_from_nl_query(nl_query, error_checking = False):
 
     # Place SQL results into DataFrame
     df = helper.get_sql_data(sql_query, engine)
+    if error_checking:
+        print df.head()
+
     return df, query_params
 
 def main(query, error_checking = False):
@@ -267,5 +270,5 @@ def main(query, error_checking = False):
     return plot1, plot2, mainfactors[:15], derivedmetrics
 
 if __name__ == "__main__":
-    query = 'what is my revenue for january 2015'
+    query = 'what is my revenue weekly for january 2015'
     main(query, error_checking = True)

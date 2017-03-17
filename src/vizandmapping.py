@@ -19,6 +19,7 @@ from mpld3 import plugins
 from rulebasedquery import translation_dictionary
 import matplotlib.pyplot as plt
 import mpld3
+import numpy as np
 
 # # Read password from external file
 # with open('passwords.json') as data_file:
@@ -91,16 +92,30 @@ def hbar_plot(df, query_params):
     """
     INPUT: dataframe with metric and factor columns
     OUTPUT: matplotlib figure
+
+    Returns a horizontal bar plot
     """
     fig, ax = plt.subplots()
 
     y_pos = range(df.shape[1]) + .5
     ax.barh(y_pos, df.factor, align="center", tick_label=df.metric)
+    for i, bar in enumerate(ax.get_children()):
+        tooltip = mpld3.plugins.LineLabelTooltip(bar, label=fig.factor[i])
+        mpld3.plugins.connect(fig, tooltip)
+
     return fig
 
 
 def hist_plot(df, query_params):
-    pass
+    """
+    INPUT: dataframe with metric and factor columns
+    OUTPUT: matplotlib figure
+    """
+    fig, ax = plt.subplots()
+    bins = np.floor(
+        min(max(20, np.sqrt(df.metric.max() - df.metric.min())), 50))
+    ax.hist(df.metric, bins=bins)
+    return fig
 
 
 if __name__ == "__main__":

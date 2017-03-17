@@ -2,7 +2,7 @@ import helper
 import json
 import psycopg2
 from sqlalchemy import create_engine
-from vizandmapping import get_data_from_nl_query
+from main import get_data_from_nl_query
 from generateresponsefromrequest import get_intent_entity_from_watson
 from rulebasedquery import translation_dictionary
 
@@ -70,8 +70,8 @@ def make_materialized_view(engine, time_period, factors, table_name):
         title_string += '_'
         title_string += factor
 
-    # Drop table if exists
-    SQL_string = """DROP MATERIALIZEZD VIEW IF EXISTS {};""".format(title_string)
+    # Drop materialized view if exists
+    SQL_string = """DROP MATERIALIZED VIEW IF EXISTS {};""".format(title_string)
     connection.execute(SQL_string)
 
     # Build materialized view
@@ -94,7 +94,7 @@ def make_materialized_view(engine, time_period, factors, table_name):
 
 
 if __name__ == "__main__":
-    make_materialized_view(engine, 'day', ['bank', 'clublevel', 'zone', 'area'], 'full_logs')
-    make_materialized_view(engine, 'minute', ['bank', 'clublevel', 'zone', 'area'], 'full_logs')
-
-    make_materialized_view(engine, 'hour', ['bank', 'clublevel', 'zone', 'area'], 'logs')
+    make_materialized_view(engine, 'week', ['bank', 'clublevel', 'zone', 'area'], 'logs')
+    # make_materialized_view(engine, 'day', ['bank', 'clublevel', 'zone', 'area'], 'full_logs')
+    # make_materialized_view(engine, 'minute', ['bank', 'clublevel', 'zone', 'area'], 'full_logs')
+    # make_materialized_view(engine, 'hour', ['bank', 'clublevel', 'zone', 'area'], 'logs')

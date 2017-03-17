@@ -24,7 +24,7 @@ from wtforms import TextAreaField, SubmitField
 from wtforms.validators import Required
 
 from watson_developer_cloud import WatsonException
-from vizandmapping import create_visualizations
+from main import main
 
 
 app = Flask(__name__)

@@ -185,7 +185,7 @@ if __name__ == "__main__":
                                                          DATABASE_PORT,
                                                          DATABASE_NAME)
     engine = create_engine(database_string)
-    # create_table(engine)
+    create_table(engine)
 
     dataset_name = '0-10mil.csv'
     df = pd.read_csv('../../data/{}'.format(dataset_name))

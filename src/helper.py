@@ -29,13 +29,13 @@ def get_sql_data(query, engine):
 @timeit
 def sum_by_time(df, factor):
     if factor:
-        return df.groupby(['tmstmp', factor], as_index = False).sum()
+        return df.groupby(['tmstmp', factor], as_index = False).sum().rename(columns = {factor: 'factor'})
     else:
         return df.groupby(['tmstmp'], as_index = False).sum()
 
 @timeit
 def find_top_specific_factors(df, factor):
-    return df.groupby([factor], as_index = False).sum().sort(columns = factor)
+    return df.groupby([factor], as_index = False).sum().sort(columns = factor).rename(columns = {factor: 'factor'})
 
 def round_timedelta(td, period):
     """

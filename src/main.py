@@ -33,6 +33,11 @@ main_factors = ['bank', 'zone', 'clublevel', 'area']
 specific_factors = ['club_level', 'area', 'game_title', 'manufacturer',
                     'stand', 'zone', 'bank']
 
+human_readable_translation = {'BRONZE': 'bronze level members',
+                              'SILVER': 'silver level members',
+                              'GOLD': 'gold level members',
+                              'PLATINUM': 'platinum level members'}
+
 def impute_period(query_params, error_checking = False):
     # Check to see if a period is specified, if not impute period based on range
     if not query_params.period:
@@ -190,22 +195,33 @@ def main(query, error_checking = False):
             factor = translation_dictionary.get(query_params.factors[0], query_params.factors[0])
         else:
             factor = None
-        title = 'Line graph'
-        print df.head()
         df_1 = helper.sum_by_time(df, factor)
-        print df_1.head()
-        plot1 = vizandmapping.create_plot_1(df_1, query_params, title)
 
         # Calculate metric total we are interest in
-        total_metric = df_1['metric'].sum()
-        metrics[query_params.metric] = total_metric
+        if factor:
+            # Multiple factor
+            total_metric_for_specific_factors = df_1.groupby(['factor'], as_index = False).sum()
+            for index, row in total_metric_for_specific_factors.iterrows():
+                title_string = "{} for {}".format(query_params.metric,
+                                                  human_readable_translation[row['factor']])
+                metrics[title_string] = row.metric
+        else:
+            # Single total revenue
+            total_metric = df_1['metric'].sum()
+            metrics[query_params.metric] = total_metric
 
         # Calculate metric per day
-        metric_per_day_name = "{} per day".format(query_params.metric)
-        num_days = helper.get_number_days(query_params)
-        metrics[metric_per_day_name] = total_metric / float(num_days)
+        # metric_per_day_name = "{} per day".format(query_params.metric)
+        # num_days = helper.get_number_days(query_params)
+        # metrics[metric_per_day_name] = total_metric / float(num_days)
+
+        print df_1.head()
+
+        # Make Plot
+        plot1 = vizandmapping.makeplot('line', df_1, query_params)
     else:
         # Histogram
+
 
         # Find factor (currently supports one factor)
         if query_params.factors:
@@ -215,70 +231,23 @@ def main(query, error_checking = False):
             factor = 'clublevel'
 
         # Find top specific factors for given factor
-        print helper.find_top_specific_factors(df, factor)
-        raw_input()
-        # # Ordering is by date, so show line graph
-        # if query_params.period:
-        #     # No need to provide single value metric
-        #     title = 'Time metric'
-        #     df_1 = helper.sum_by_time(df, None)
-        #     plot1 = create_plot_1(df_1, query_params, title)
-        #     if query_params.factors:
-        #         # Multi-line graph
-        #         title = 'Time metric'
-        #         factor = translation_dictionary.get(query_params.factors[0], query_params.factors[0])
-        #         df_1 = helper.sum_by_time(df, factor)
-        #         plot1 = create_plot_1(df_1, query_params, title)
-        #     else:
-        #         # Single line graph
-        #         df_1 = helper.sum_by_time(df, None)
-        #         plot1 = create_plot_1(df_1, query_params, title)
-        # else:
-        #     if query_params.factors:
-        #         # Multi-line graph
-        #         title = 'Time metric'
-        #         factor = translation_dictionary.get(query_params.factors[0], query_params.factors[0])
-        #         df_1 = helper.sum_by_time(df, factor)
-        #         plot1 = create_plot_1(df_1, query_params, title)
-        #     else:
-        #         # Single line graph
-        #         df_1 = helper.sum_by_time(df, None)
-        #         plot1 = create_plot_1(df_1, query_params, title)
-        #     df_1 = helper.sum_by_time(df, None)
-        #     print df_1.head()
+        df_1 = helper.find_top_specific_factors(df, factor)
 
-    #     if query_params.period:
-    #         if query_params.factors:
-    #             if query_params.club_level or query_params.area or \
-    #                query_params.game_title or query_params.manufacturer or \
-    #                query_params.stand or query_params.zone or query_params.bank:
-    #                # What is the daily revenue for males by club level?
-    #                # Get data divided by important factors and aggregate / filter
-    #                # Multi-line graph
-    #                pass
-    #             else:
-    #                 # What is the daily revenue by club level?
-    #                 # Get data divided by important factors and aggregate
-    #                 # Multi-line graph
-    #                 pass
-    #
-    #             # What is revenue by club level January?
-    #             # Get data divided by important factors and aggregate
-    #             # Multi-line graph
-    #         # What is the revenue for January daily?
-    #         # Get data divided by important factors and aggregate
-    #     else:
-    #         # What is revenue today?
-    #         # Infer best segmented data
-    #         # Possible segments are by minute, hourly, daily, weekly, monthly, yearly
-    #         pass
+        print df_1.head()
 
+        # Make plot
+        plot1 = vizandmapping.makeplot('hbar', df_1, query_params)
+
+    # Calculate the main factors driving change in metric
     mainfactors_df = factor_analysis.get_main_factors(df)
     mainfactors = factor_analysis.translate_mainfactors_df_into_list(mainfactors_df)
-    df_2, plot2 = vizandmapping.create_plot_2(mainfactors, df, query)
+
+    # Make plot 2
+    df_1 = helper.sum_by_time(df, factor)
+    plot2 = vizandmapping.makeplot('line', df_1, query_params)
     derivedmetrics = factor_analysis.create_derivedmetrics()
     return plot1, plot2, mainfactors[:15], derivedmetrics
 
 if __name__ == "__main__":
-    query = 'what was my best club level january 2015'
+    query = 'revenue daily january 2015'
     main(query, error_checking = True)

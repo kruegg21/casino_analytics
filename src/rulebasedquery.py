@@ -36,7 +36,7 @@ Set the defauls in the __init__ function of the query parameters class.
 
 from generateresponsefromrequest import get_intent_entity_from_watson
 
-translation_dictionary = {'net'
+translation_dictionary = {'net' : None,
                           'revenue': 'SUM(amountbet - amountwon)',
                           'popularity': 'COUNT(*)',
                           'games played': 'SUM(gamesplayed)',

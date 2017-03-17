@@ -100,3 +100,6 @@ f-env/
 
 # OSX files
 *.DS_Store
+
+# Passwords
+passwords.json

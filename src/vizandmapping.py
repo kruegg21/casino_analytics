@@ -13,62 +13,87 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import helper
-import json
-import pandas as pd
+# from sqlalchemy import create_engine
+# import json
+from mpld3 import plugins
+from rulebasedquery import translation_dictionary
+import factor_analysis
 import matplotlib.pyplot as plt
 import mpld3
 import numpy as np
-import seaborn as sns
-import requests
-from datetime import timedelta
-from sqlalchemy import create_engine
-import factor_analysis
-from generateresponsefromrequest import get_intent_entity_from_watson
-from rulebasedquery import query_parameters, translation_dictionary
+import pandas as pd
 
-'''
-The purpose of this module is to produce four objects through four
-major processes:
-INPUT:
-    single natural language query
-OUTPUT:
-    plot1 (unicode): this is the html, css, javascript to render the
-    mpld3 plot
-    mainfactors (list): this is a list of tuples where each element
-    is three items - the metric, the direction, and the percent change
-    plot2 (unicode): this is the html, css, javascript to render the
-    mpld3 plot
-    derivedmetrics (list): this is a list of tuples where each element
-    is three items - the metric, the direction, and the percent change
-Where mainfactors are derived from plot1 trend data, plot2 visualizes the
-most important factor in plot2, and then derivedmetrics are the most
-influential metric changes over the time period specified
-'''
+# # Read password from external file
+# with open('passwords.json') as data_file:
+#     data = json.load(data_file)
+#
+# DATABASE_HOST = 'soft-feijoa.db.elephantsql.com'
+# DATABASE_PORT = '5432'
+# DATABASE_NAME = 'ohdimqey'
+# DATABASE_USER = 'ohdimqey'
+# DATABASE_PASSWORD = data['DATABASE_PASSWORD']
+#
+# # Connect to database
+# database_string = 'postgres://{}:{}@{}:{}/{}'.format(DATABASE_USER,
+#                                                      DATABASE_PASSWORD,
+#                                                      DATABASE_HOST,
+#                                                      DATABASE_PORT,
+#                                                      DATABASE_NAME)
+# engine = create_engine(database_string)
 
-# Local database
-# DATABASE_USER = 'test'
-# DATABASE_NAME = 'playlogs'
-# DATABASE_DOMAIN = 'tiger@localhost'
-# DATABASE_TABLE = 'logs'
+def makeplot(p_type, df, query_params):
+    '''
+    INPUT: string, pandas dataframe
+    OUTPUT: plot as html string
 
-# Read password from external file
-with open('passwords.json') as data_file:
-    data = json.load(data_file)
+    Takes in a string for a type of plot and and a dataframe and makes an html
+    string for a plot of that dataframe
+    '''
 
-DATABASE_HOST = 'soft-feijoa.db.elephantsql.com'
-DATABASE_PORT = '5432'
-DATABASE_NAME = 'ohdimqey'
-DATABASE_USER = 'ohdimqey'
-DATABASE_PASSWORD = data['DATABASE_PASSWORD']
+    plot = {"line": line_plot}
 
-# Connect to database
-database_string = 'postgres://{}:{}@{}:{}/{}'.format(DATABASE_USER,
-                                                     DATABASE_PASSWORD,
-                                                     DATABASE_HOST,
-                                                     DATABASE_PORT,
-                                                     DATABASE_NAME)
-engine = create_engine(database_string)
+    if df.shape[0] > 1:
+        return mpld3.fig_to_html(plot[p_type](df, query_params))
+    else:
+        raise ValueError("Passed Dataframe needs at least two columns")
+
+
+def line_plot(df, query_params):
+    '''
+    INPUT: pandas dataframe
+    OUTPUT: matplotlib figure
+    '''
+
+    fig, ax = plt.subplots()
+
+    if df.shape[0] == 2:
+        # Make plot for single-line graph
+        plt.plot(df.tmstmp, df.metric)
+        plt.xlabel('Time')
+        plt.ylabel(query_params.metric)
+
+        # Shade under curve
+        min_y = ax.get_ylim()[0]
+        plt.fill_between(df.tmstmp.values, df.metric.values, min_y, alpha=0.5)
+    elif df.shape[0] > 2:
+        # Plot multi-line graph
+        factor = translation_dictionary.get(
+            query_params.factors[0], query_params.factors[0])
+
+        for unique_item in df[factor].unique():
+            df_subgroup = df[df[factor] == unique_item]
+            # Make plot
+            plt.plot(df_subgroup.tmstmp, df_subgroup.metric, label=unique_item)
+            # Make interactive legend
+            handles, labels = ax.get_legend_handles_labels()
+            interactive_legend = plugins.InteractiveLegendPlugin(zip(
+                handles, ax.collections), labels, alpha_unsel=0.5, alpha_over=1.5, start_visible=True)
+            plugins.connect(fig, interactive_legend)
+    else:
+        pass
+
+    return fig
+
 
 def create_line_graph(df, query_params, title):
     '''
@@ -78,48 +103,51 @@ def create_line_graph(df, query_params, title):
     Output:
         HTML string representation of Matplotlib figure
     '''
-    # Create figure object
-    fig = plt.figure()
-    axes = plt.gca()
+    # # Create figure object
+    # fig = plt.figure()
+    # axes = plt.gca()
+    #
+    # # Check if we are building single or multi-line graph
+    # if len(df.columns) == 2:
+    #     # Make plot for single-line graph
+    #     plt.plot(df.tmstmp, df.metric)
+    #     plt.xlabel('Time')
+    #     plt.ylabel(query_params.metric)
+    #
+    #     # Shade under curve
+    #     min_y = axes.get_ylim()[0]
+    #     plt.fill_between(df.tmstmp.values, df.metric.values, min_y, alpha=0.5)
+    # else:
+    #     # Plot multi-line graph
+    #     factor = translation_dictionary.get(
+    #         query_params.factors[0], query_params.factors[0])
+    #
+    #     for unique_item in df[factor].unique():
+    #         df_subgroup = df[df[factor] == unique_item]
+    #
+    #         # Make plot
+    #         plt.plot(df_subgroup.tmstmp, df_subgroup.metric, label=unique_item)
+    #
+    #         # Shade under curve
+    #         axes = plt.gca()
+    #         min_y = axes.get_ylim()[0]
+    #         # plt.fill_between(df_subgroup.tmstmp.values, df_subgroup.metric.values, min_y, alpha = 0.5)
+    #
+    # # Label axes
+    # plt.xlabel('Time')
+    # plt.ylabel(query_params.metric)
+    #
+    # # Add legend
+    # plt.legend()
+    #
+    # # Add title
+    # axes.set_title(title)
+    #
+    # # Convert to D3
+    # fig_d3 = mpld3.fig_to_html(fig)
+    # return fig_d3
+    return makeplot("line", df, query_params)
 
-    # Check if we are building single or multi-line graph
-    if len(df.columns) == 2:
-        # Make plot for single-line graph
-        plt.plot(df.tmstmp, df.metric)
-        plt.xlabel('Time')
-        plt.ylabel(query_params.metric)
-
-        # Shade under curve
-        min_y = axes.get_ylim()[0]
-        plt.fill_between(df.tmstmp.values, df.metric.values, min_y, alpha = 0.5)
-    else:
-        # Plot multi-line graph
-        factor = translation_dictionary.get(query_params.factors[0], query_params.factors[0])
-
-        for unique_item in df[factor].unique():
-            df_subgroup = df[df[factor] == unique_item]
-
-            # Make plot
-            plt.plot(df_subgroup.tmstmp, df_subgroup.metric, label = unique_item)
-
-            # Shade under curve
-            axes = plt.gca()
-            min_y = axes.get_ylim()[0]
-            # plt.fill_between(df_subgroup.tmstmp.values, df_subgroup.metric.values, min_y, alpha = 0.5)
-
-    # Label axes
-    plt.xlabel('Time')
-    plt.ylabel(query_params.metric)
-
-    # Add legend
-    plt.legend()
-
-    # Add title
-    axes.set_title(title)
-
-    # Convert to D3
-    fig_d3 = mpld3.fig_to_html(fig)
-    return fig_d3
 
 def create_plot_1(df, query_params, title):
     '''
@@ -134,6 +162,7 @@ def create_plot_1(df, query_params, title):
     '''
     plot1 = create_line_graph(df, query_params, title)
     return plot1
+
 
 def create_plot_2(mainfactors, factor_df, nl_query):
     '''
@@ -153,7 +182,8 @@ def create_plot_2(mainfactors, factor_df, nl_query):
         mpld3 plot
     '''
     top_factor = mainfactors[0][0]
-    main_factor = factor_analysis.find_factor_of_top_factor(top_factor, factor_df)
+    main_factor = factor_analysis.find_factor_of_top_factor(
+        top_factor, factor_df)
     df_2 = factor_df.groupby(['tmstmp', main_factor]).sum().reset_index()
     main_factors = pd.unique(df_2[main_factor])
     fig = plt.figure()
@@ -166,54 +196,5 @@ def create_plot_2(mainfactors, factor_df, nl_query):
     plot2 = mpld3.fig_to_html(fig)
     return df_2, plot2
 
-
 if __name__ == "__main__":
-    query = 'what is my revenue january 1st 2015 by area'
-    plot1, plot2, mainfactors, derivedmetrics = create_visualizations(query)
-
-    # plt.show()
-
-    # query = query_params.query + \
-    #     ', game title, manufacturer, zone, bank, stand, wager, club level'
-    # query = query_params.query + \
-    #     ', game title, club level'
-
-    # Get JSON Watson conversations response to natual language query
-    # response = get_intent_entity_from_watson(query)
-
-    # Transform JSON Watson conversations response to query parameters object
-    # query_params = query_parameters()
-    # query_params.generate_query_params_from_response(nl_query, response, error_checking = True)
-
-    query_params.generate_sql_query()
-
-    print query_params
-
-    # Get SQL query string from query parameters object
-    sql_query = query_params.sql_string
-
-    # Place SQL results into DataFrame
-    factor_df = helper.get_sql_data(sql_query, engine)
-
-    print factor_df.head()
-    raw_input()
-
-    # mainfactors_df = get_main_factors(factor_df)
-    # mainfactors = translate_mainfactors_df_into_list(mainfactors_df)
-    # # df_2, plot2 = create_plot_2(mainfactors, factor_df, query)
-    # top_factor = mainfactors[0][0]
-    # main_factor = find_factor_of_top_factor(top_factor, factor_df)
-    # df_2 = factor_df.groupby(['tmstmp', main_factor]).sum().reset_index()
-    # main_factors = pd.unique(df_2[main_factor])
-    # fig = plt.figure()
-    # plt.show()
-    #
-    # for factor in main_factors:
-    #     subdf = df_2[df_2[main_factor] == factor]
-    #     plt.plot(subdf.tmstmp, subdf.metric, label=factor)
-    # plt.xlabel('time stamp')
-    # plt.ylabel('metric')
-    # plt.legend(loc='best')
-    # plot2 = mpld3.fig_to_html(fig)
-    # derivedmetrics = create_derivedmetrics()
-    # plot1, plot2, mainfactors, derivedmetrics = create_visualizations(query)
+    pass

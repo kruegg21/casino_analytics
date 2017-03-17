@@ -34,6 +34,9 @@ var/
 pip-log.txt
 pip-delete-this-directory.txt
 
+# Passwords
+passwords*
+
 # Unit test / coverage reports
 htmlcov/
 .tox/
@@ -91,6 +94,9 @@ f-env/
 
 # data
 *.csv
+
+# JSON
+*.json
 
 # OSX files
 *.DS_Store

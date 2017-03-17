@@ -56,66 +56,61 @@
 		</div>
 	</nav>
 
-	<div class="answer">
-		<div class="answer answer-space"></div>
-		<div class="answer answer-text answer-statistic">
-			Statistic of Interest:
-		</div>
-		<div class="answer answer-text answer-value">
-			Value
-		</div>
-		<div class="answer answer-space"></div>
-	</div>
-
-	<div id="wrapper">
-
-		<div id="graph-holder-main">
-			<h1>Primary Query Output</h1> {{plot1|safe}}
+	<div class="container-fluid">
+		<div class="row">
+			<div class="col-md-1"></div>
+			<div class="col-md-11 answer">
+				<div>Statistic of Interest: Value</div>
+			</div>
 		</div>
 
-		<div id="factors">
-			<h1>Primary Factor Breakdown</h1>
-			<table>
-				<thead>
-					<th>factor</th>
-					<th>direction</th>
-					<th>change</th>
-				</thead>
-				<tbody>
-					{% for factor, direction, change in mainfactors %}
-					<tr>
-						<td>{{ factor }}</td>
-						<td>{{ direction }}</td>
-						<td>{{ change }}</td>
-					</tr>
-					{% endfor %}
-				</tbody>
-			</table>
-
+		<div class="row">
+			<div class="col-md-8">
+				<div>{{plot1|safe}}</div>
+			</div>
+			<div class="col-md-4">
+				<table>
+					<thead>
+						<th>Factor</th>
+						<th>Direction</th>
+						<th>Change</th>
+					</thead>
+					<tbody>
+						{% for factor, direction, change in mainfactors %}
+						<tr>
+							<td>{{ factor }}</td>
+							<td>{{ direction }}</td>
+							<td>{{ change }}</td>
+						</tr>
+						{% endfor %}
+					</tbody>
+				</table>
+			</div>
 		</div>
 
-		<div id="graph-holder-derived">
-			<h1>Secondary Query Output</h1> {{plot2|safe}}
-		</div>
+		<div class="row">
+			<div class="col-md-8">
+				{{plot2|safe}}
+			</div>
 
-		<div id="metrics">
-			<h1>Derived Metric Breakdown</h1>
-			<table>
-				<thead>
-					<th>metric</th>
-					<th>direction</th>
-					<th>change</th>
-				</thead>
-				<tbody>
-					{% for metric, direction, change in derivedmetrics %}
-					<tr>
-						<td>{{ metric }}</td>
-						<td>{{ direction }}</td>
-						<td>{{ change }}</td>
-					</tr>
-					{% endfor %}
-				</tbody>
-			</table>
+			<div class="col-md-4">
+				<table style="padding-top:60px">
+					<thead>
+						<th>Metric</th>
+						<th>Direction</th>
+						<th>Change</th>
+					</thead>
+					<tbody>
+						{% for metric, direction, change in derivedmetrics %}
+						<tr>
+							<td>{{ metric }}</td>
+							<td>{{ direction }}</td>
+							<td>{{ change }}</td>
+						</tr>
+						{% endfor %}
+					</tbody>
+				</table>
+			</div>
 		</div>
 	</div>
 

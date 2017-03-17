@@ -4,12 +4,9 @@
 
 .answer {
   text-align: left;
-  font-size: 30px;
-  line-height: 30px;
-}
-
-.answer-space {
-  height: 15px;
+  padding-top: 20px;
+  font-size: 40px;
+  line-height: 40px;
 }
 
 .answer-text {

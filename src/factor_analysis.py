@@ -113,5 +113,19 @@ def find_factor_of_top_factor(top_factors, factor_df):
         if top_factors in set(factor_df[factor]):
             return factor
 
+def create_derivedmetrics():
+    '''
+    Args:
+        None
+    Returns:
+        derivedmetrics (list): this is a list of tuples where each element
+        is three items - the metric, the direction, and the percent change
+    '''
+    metrics = ['coin in', 'net wins', 'utility', 'coin out', 'jackpots']
+    percent = np.random.rand(5) * np.random.choice([1, -1], 5)
+    direction = ['up' if pct > 0 else 'down' for pct in percent]
+    derivedmetrics = zip(metrics, direction, percent)
+    return derivedmetrics
+
 if __name__ == "__main__":
     pass

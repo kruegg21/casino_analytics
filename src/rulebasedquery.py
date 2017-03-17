@@ -60,9 +60,10 @@ translation_dictionary = {'net'
                           'average': 'AVG',
                           'median': 'MIN'}
 
+# Default metrics and time ranges
 DEFAULT_METRIC = 'revenue'
-DEFAULT_START = None
-DEFAULT_STOP = None
+DEFAULT_START = '2015-01-01'
+DEFAULT_STOP = '2015-01-31'
 
 class query_parameters(object):
     def __init__(self):
@@ -134,9 +135,9 @@ class query_parameters(object):
 
         if not self.sql_metric:
             if not self.metric:
-                self.sql_metric = translation_dictionary.get(DEFAULT_METRIC, DEFAULT_METRIC)
+                self.sql_metric = DEFAULT_METRIC
             else:
-                self.sql_metric = translation_dictionary.get(self.metric, self.metric)
+                self.sql_metric = self.metric
 
         self.sql_factors += [translation_dictionary.get(x, x) for x in self.factors]
         self.sql_factors = list(set(self.sql_factors))
@@ -146,10 +147,16 @@ class query_parameters(object):
             self.sql_ordering = translation_dictionary.get(self.ordering, self.ordering)
 
         if not self.sql_start:
-            self.sql_start = self.start.strftime("%Y-%m-%d-00-00-00-000")
+            if not self.start:
+                self.sql_start = DEFAULT_START.strftime("%Y-%m-%d-00-00-00-000")
+            else:
+                self.sql_start = self.start.strftime("%Y-%m-%d-00-00-00-000")
 
         if not self.sql_stop:
-            self.sql_stop = self.stop.strftime("%Y-%m-%d-23-59-59-999")
+            if not self.stop:
+                self.sql_stop = DEFAULT_STOP.strftime("%Y-%m-%d-00-00-00-000")
+            else:
+                self.sql_stop = self.stop.strftime("%Y-%m-%d-23-59-59-999")
 
         if self.club_level:
             self.sql_club_level = """AND clublevel = '{}'""".format(translation_dictionary.get(self.club_level, self.club_level))
@@ -173,8 +180,6 @@ class query_parameters(object):
         '''
 
         # Turn JSON into Python dictionary
-        if error_checking:
-            print "Raw JSON of Watson response: {}".format(json.loads(json.dumps(response)))
         response_dict = json.loads(json.dumps(response))['intent_entity_mapping']
 
         # Add query to query parameters object
@@ -304,7 +309,7 @@ class query_parameters(object):
                WHERE {} >= to_timestamp('{}', 'YYYY-MM-DD-HH24-MI-SS-MS')
                AND {} <= to_timestamp('{}', 'YYYY-MM-DD-HH24-MI-SS-MS')
                {}{}""".format(self.sql_statistic,
-                              self.metric,
+                              self.sql_metric,
                               self.sql_period,
                               factors_string,
                               title_string,

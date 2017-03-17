@@ -20,7 +20,6 @@ from rulebasedquery import translation_dictionary
 import matplotlib.pyplot as plt
 import mpld3
 
-
 # # Read password from external file
 # with open('passwords.json') as data_file:
 #     data = json.load(data_file)
@@ -38,6 +37,7 @@ import mpld3
 #                                                      DATABASE_PORT,
 #                                                      DATABASE_NAME)
 # engine = create_engine(database_string)
+
 
 def makeplot(p_type, df, query_params):
     '''

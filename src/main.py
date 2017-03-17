@@ -74,7 +74,7 @@ def impute_period(query_params, error_checking = False):
 
         # Add imputed period
         query_params.sql_period = translation_dictionary[period]
-        return query_params
+    return query_params
 
 def get_data_from_nl_query(nl_query, error_checking = False):
     '''
@@ -94,7 +94,7 @@ def get_data_from_nl_query(nl_query, error_checking = False):
 
     # Transform JSON Watson conversations response to query parameters object
     query_params = query_parameters()
-    query_params.generate_query_params_from_response(nl_query, response, error_checking = False)
+    query_params.generate_query_params_from_response(nl_query, response, error_checking = error_checking)
 
     # Add main factors
     query_params.sql_factors += main_factors
@@ -103,7 +103,7 @@ def get_data_from_nl_query(nl_query, error_checking = False):
     query_params = impute_period(query_params)
 
     # Generate SQL query
-    query_params.generate_sql_query(error_checking = True)
+    query_params.generate_sql_query(error_checking = error_checking)
 
     # Get SQL query string from query parameters object
     sql_query = query_params.sql_string
@@ -112,6 +112,9 @@ def get_data_from_nl_query(nl_query, error_checking = False):
 
     # Place SQL results into DataFrame
     df = helper.get_sql_data(sql_query, engine)
+    if error_checking:
+        print df.head()
+
     return df, query_params
 
 def main(query, error_checking = False):
@@ -182,7 +185,7 @@ def main(query, error_checking = False):
     if query_params.ordering == 'date':
         # Line graph
 
-        # Currently supports only single factor
+        # Find factor we need to aggregate on (currently supports only single factor)
         if query_params.factors:
             factor = translation_dictionary.get(query_params.factors[0], query_params.factors[0])
         else:
@@ -191,16 +194,29 @@ def main(query, error_checking = False):
         print df.head()
         df_1 = helper.sum_by_time(df, factor)
         print df_1.head()
-        raw_input()
         plot1 = vizandmapping.create_plot_1(df_1, query_params, title)
 
         # Calculate metric total we are interest in
-        total = df_1['metric'].sum()
-        title = 'Total {} from {} to {} is {}'.format(query_params.metric,
-                                                      query_params.start,
-                                                      query_params.stop,
-                                                      total)
+        total_metric = df_1['metric'].sum()
+        metrics[query_params.metric] = total_metric
 
+        # Calculate metric per day
+        metric_per_day_name = "{} per day".format(query_params.metric)
+        num_days = helper.get_number_days(query_params)
+        metrics[metric_per_day_name] = total_metric / float(num_days)
+    else:
+        # Histogram
+
+        # Find factor (currently supports one factor)
+        if query_params.factors:
+            factor = translation_dictionary.get(query_params.factors[0], query_params.factors[0])
+        else:
+            # Defaults to clublevel
+            factor = 'clublevel'
+
+        # Find top specific factors for given factor
+        print helper.find_top_specific_factors(df, factor)
+        raw_input()
         # # Ordering is by date, so show line graph
         # if query_params.period:
         #     # No need to provide single value metric
@@ -256,9 +272,6 @@ def main(query, error_checking = False):
     #         # Infer best segmented data
     #         # Possible segments are by minute, hourly, daily, weekly, monthly, yearly
     #         pass
-    else:
-        # Histogram deal with this later
-        pass
 
     mainfactors_df = factor_analysis.get_main_factors(df)
     mainfactors = factor_analysis.translate_mainfactors_df_into_list(mainfactors_df)
@@ -267,5 +280,5 @@ def main(query, error_checking = False):
     return plot1, plot2, mainfactors[:15], derivedmetrics
 
 if __name__ == "__main__":
-    query = 'what is my revenue for january 2015'
+    query = 'what was my best club level january 2015'
     main(query, error_checking = True)

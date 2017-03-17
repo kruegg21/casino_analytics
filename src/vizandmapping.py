@@ -90,7 +90,7 @@ def line_plot(df, query_params):
     return fig
 
 
-def hbar_plot(df):
+def hbar_plot(df, query_params):
     """
     INPUT: dataframe with metric and factor columns
     OUTPUT: matplotlib figure
@@ -100,6 +100,10 @@ def hbar_plot(df):
     y_pos = range(df.shape[1]) + .5
     ax.barh(y_pos, df.factor, align="center", tick_label=df.metric)
     return fig
+
+
+def hist_plot(df, query_params):
+    pass
 
 
 if __name__ == "__main__":

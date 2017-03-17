@@ -104,49 +104,50 @@ def create_line_graph(df, query_params, title):
     Output:
         HTML string representation of Matplotlib figure
     '''
-    # Create figure object
-    fig = plt.figure()
-    axes = plt.gca()
-
-    # Check if we are building single or multi-line graph
-    if len(df.columns) == 2:
-        # Make plot for single-line graph
-        plt.plot(df.tmstmp, df.metric)
-        plt.xlabel('Time')
-        plt.ylabel(query_params.metric)
-
-        # Shade under curve
-        min_y = axes.get_ylim()[0]
-        plt.fill_between(df.tmstmp.values, df.metric.values, min_y, alpha=0.5)
-    else:
-        # Plot multi-line graph
-        factor = translation_dictionary.get(
-            query_params.factors[0], query_params.factors[0])
-
-        for unique_item in df[factor].unique():
-            df_subgroup = df[df[factor] == unique_item]
-
-            # Make plot
-            plt.plot(df_subgroup.tmstmp, df_subgroup.metric, label=unique_item)
-
-            # Shade under curve
-            axes = plt.gca()
-            min_y = axes.get_ylim()[0]
-            # plt.fill_between(df_subgroup.tmstmp.values, df_subgroup.metric.values, min_y, alpha = 0.5)
-
-    # Label axes
-    plt.xlabel('Time')
-    plt.ylabel(query_params.metric)
-
-    # Add legend
-    plt.legend()
-
-    # Add title
-    axes.set_title(title)
-
-    # Convert to D3
-    fig_d3 = mpld3.fig_to_html(fig)
-    return fig_d3
+    # # Create figure object
+    # fig = plt.figure()
+    # axes = plt.gca()
+    #
+    # # Check if we are building single or multi-line graph
+    # if len(df.columns) == 2:
+    #     # Make plot for single-line graph
+    #     plt.plot(df.tmstmp, df.metric)
+    #     plt.xlabel('Time')
+    #     plt.ylabel(query_params.metric)
+    #
+    #     # Shade under curve
+    #     min_y = axes.get_ylim()[0]
+    #     plt.fill_between(df.tmstmp.values, df.metric.values, min_y, alpha=0.5)
+    # else:
+    #     # Plot multi-line graph
+    #     factor = translation_dictionary.get(
+    #         query_params.factors[0], query_params.factors[0])
+    #
+    #     for unique_item in df[factor].unique():
+    #         df_subgroup = df[df[factor] == unique_item]
+    #
+    #         # Make plot
+    #         plt.plot(df_subgroup.tmstmp, df_subgroup.metric, label=unique_item)
+    #
+    #         # Shade under curve
+    #         axes = plt.gca()
+    #         min_y = axes.get_ylim()[0]
+    #         # plt.fill_between(df_subgroup.tmstmp.values, df_subgroup.metric.values, min_y, alpha = 0.5)
+    #
+    # # Label axes
+    # plt.xlabel('Time')
+    # plt.ylabel(query_params.metric)
+    #
+    # # Add legend
+    # plt.legend()
+    #
+    # # Add title
+    # axes.set_title(title)
+    #
+    # # Convert to D3
+    # fig_d3 = mpld3.fig_to_html(fig)
+    # return fig_d3
+    return makeplot("line", df, query_params)
 
 
 def create_plot_1(df, query_params, title):

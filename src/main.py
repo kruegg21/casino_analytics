@@ -36,8 +36,10 @@ specific_factors = ['club_level', 'area', 'game_title', 'manufacturer',
 human_readable_translation = {'BRONZE': 'bronze level members',
                               'SILVER': 'silver level members',
                               'GOLD': 'gold level members',
-                              'PLATINUM': 'platinum level members'}
+                              'PLATINUM': 'platinum level members',
+                              'netwins': 'Net Wins'}
 
+@helper.timeit
 def impute_period(query_params, error_checking = False):
     # Check to see if a period is specified, if not impute period based on range
     if not query_params.period:
@@ -45,40 +47,51 @@ def impute_period(query_params, error_checking = False):
         time_range = query_params.stop - query_params.start
         if time_range > timedelta(hours = 23, minutes = 59, seconds = 59):
             # Range is greater than a day
-            print "Range is greater than a day" if error_checking else None
             if time_range > timedelta(days = 6, hours = 23, minutes = 59, seconds = 59):
                 # Range is greater than a week
-                print "Range is greater than a week" if error_checking else None
-                if time_range > timedelta(days = 27, hours = 23, minutes = 59, seconds = 59):
+                if time_range > timedelta(days = 31, hours = 23, minutes = 59, seconds = 59):
                     # Range is greater than a month
-                    print "Range is greater than a month" if error_checking else None
                     if time_range > timedelta(days = 364, hours = 23, minutes = 59, seconds = 59):
                         # Range is greater than a year
-                        print "Range is greater than a year" if error_checking else None
                         # Segment by months
                         period = 'monthly'
                     else:
                         # Range is less than a year
-                        print "Range is less than a year" if error_checking else None
                         # Segment by weeks
                         period = 'weekly'
                 else:
                     # Range is less than a month
-                    print "Range is less than a month" if error_checking else None
                     # Segment by days
                     period = 'daily'
             else:
                 # Range is less than week
-                print "Range is less than a week" if error_checking else None
                 # Segment by hour
                 period = 'hourly'
         else:
-            print "Range is smaller than a day" if error_checking else None
             # Segment by minute
             period = 'by_minute'
 
         # Add imputed period
         query_params.sql_period = translation_dictionary[period]
+
+    # Check to see if we need more granularity for time factor
+    if query_params.time_factor:
+        if query_params.time_factor == 'top minute':
+            if query_params.sql_period in ['year', 'month', 'week', 'day', 'hour']:
+                query_params.sql_period = 'minute'
+        if query_params.time_factor == 'top hour':
+            if query_params.sql_period in ['year', 'month', 'week', 'day']:
+                query_params.sql_period = 'hour'
+        if query_params.time_factor == 'top day':
+            if query_params.sql_period in ['year', 'month', 'week']:
+                query_params.sql_period = 'day'
+        if query_params.time_factor == 'top week':
+            if query_params.sql_period in ['year', 'month']:
+                query_params.sql_period = 'week'
+        if query_params.time_factor == 'top month':
+            if query_params.sql_period in ['year']:
+                query_params.sql_period = 'month'
+
     return query_params
 
 def get_data_from_nl_query(nl_query, error_checking = False):
@@ -174,7 +187,7 @@ def main(query, error_checking = False):
     # All queries will have a metric and range (if none provided we will infer)
     # M: always included (if not infer)
 	# F: indicates multi-line graph or multi-dimensional histogram
-	# SF: indicates filtering
+    	# SF: indicates filtering
 	# R: always included (if not infer)
 	# P: indicates which materialized view to pull from, if missing indicates a
     #    single value answer should be provided
@@ -197,7 +210,7 @@ def main(query, error_checking = False):
             factor = None
         df_1 = helper.sum_by_time(df, factor)
 
-        # Calculate metric total we are interest in
+        # Calculate metric total we are interested in
         if factor:
             # Multiple factor
             total_metric_for_specific_factors = df_1.groupby(['factor'], as_index = False).sum()
@@ -206,22 +219,23 @@ def main(query, error_checking = False):
                                                   human_readable_translation[row['factor']])
                 metrics[title_string] = row.metric
         else:
-            # Single total revenue
+            # Single total
             total_metric = df_1['metric'].sum()
-            metrics[query_params.metric] = total_metric
+            metrics['total ' + query_params.metric] = total_metric
 
-        # Calculate metric per day
-        # metric_per_day_name = "{} per day".format(query_params.metric)
-        # num_days = helper.get_number_days(query_params)
-        # metrics[metric_per_day_name] = total_metric / float(num_days)
+        # Calculate metric PUPD
+        if query_params.show_as_pupd:
+            metric_per_day_name = "{} per day".format(query_params.metric)
+            metrics[metric_per_day_name] = total_metric / (query_params.num_days * query_params.num_machines)
 
-        print df_1.head()
+        # Calculate PUPD for each metric
+        if query_params.show_as_pupd:
+            df_1 = helper.calculate_pupd(df_1, query_params)
 
         # Make Plot
         plot1 = vizandmapping.makeplot('line', df_1, query_params)
     else:
         # Histogram
-
 
         # Find factor (currently supports one factor)
         if query_params.factors:
@@ -230,10 +244,11 @@ def main(query, error_checking = False):
             # Defaults to clublevel
             factor = 'clublevel'
 
+        if query_params.time_factor:
+            factor = query_params.time_factor
+
         # Find top specific factors for given factor
         df_1 = helper.find_top_specific_factors(df, factor)
-
-        print df_1.head()
 
         # Make plot
         plot1 = vizandmapping.makeplot('hbar', df_1, query_params)
@@ -242,6 +257,17 @@ def main(query, error_checking = False):
     mainfactors_df = factor_analysis.get_main_factors(df)
     mainfactors = factor_analysis.translate_mainfactors_df_into_list(mainfactors_df)
 
+    # Find the top factor from mainfactors
+    top_factor = mainfactors[0][0]
+    if top_factor[:4] == 'AREA':
+        factor = 'area'
+    elif top_factor[:4] == 'BANK':
+        factor = 'bank'
+    elif top_factor[:4] == 'ZONE':
+        factor = 'zone'
+    else:
+        factor = 'clublevel'
+
     # Make plot 2
     df_1 = helper.sum_by_time(df, factor)
     plot2 = vizandmapping.makeplot('line', df_1, query_params)
@@ -249,5 +275,5 @@ def main(query, error_checking = False):
     return plot1, plot2, mainfactors[:15], derivedmetrics
 
 if __name__ == "__main__":
-    query = 'revenue daily january 2015'
+    query = 'how are my machines doing january 2015'
     main(query, error_checking = True)

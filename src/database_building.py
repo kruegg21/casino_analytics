@@ -77,8 +77,11 @@ def make_materialized_view(engine, time_period, factors, table_name):
     # Build materialized view
     print "Creating materialized view: {}".format(title_string)
     SQL_string =  """CREATE MATERIALIZED VIEW IF NOT EXISTS {} AS
-                      SELECT SUM(amountbet - amountwon) AS revenue,
-                             COUNT(*) AS popularity, date_trunc('{}', {}.tmstmp) AS {}{}
+                      SELECT SUM(amountbet - amountwon) AS netwins,
+                             SUM(gamesplayed) AS handlepulls,
+                             SUM(amountwon) AS amountwon,
+                             SUM(amountbet) AS amountbet,
+                             date_trunc('{}', {}.tmstmp) AS {}{}
                       FROM {}
                       GROUP BY date_trunc('{}', {}.tmstmp){};""".format(title_string,
                                                                         time_period,
@@ -92,9 +95,23 @@ def make_materialized_view(engine, time_period, factors, table_name):
     print "SQL command to build materialized view: {}".format(SQL_string)
     result = connection.execute(SQL_string)
 
-
 if __name__ == "__main__":
+    make_materialized_view(engine, 'week', ['bank', 'clublevel', 'zone', 'area', 'assettitle', 'stand'], 'full_logs')
+    make_materialized_view(engine, 'week', ['bank', 'clublevel', 'zone', 'area', 'stand'], 'full_logs')
+    make_materialized_view(engine, 'week', ['bank', 'clublevel', 'zone', 'area', 'assettitle'], 'full_logs')
     make_materialized_view(engine, 'week', ['bank', 'clublevel', 'zone', 'area'], 'full_logs')
-    # make_materialized_view(engine, 'day', ['bank', 'clublevel', 'zone', 'area'], 'full_logs')
-    # make_materialized_view(engine, 'minute', ['bank', 'clublevel', 'zone', 'area'], 'full_logs')
+
+    make_materialized_view(engine, 'day', ['bank', 'clublevel', 'zone', 'area', 'assettitle', 'stand'], 'full_logs')
+    make_materialized_view(engine, 'day', ['bank', 'clublevel', 'zone', 'area', 'stand'], 'full_logs')
+    make_materialized_view(engine, 'day', ['bank', 'clublevel', 'zone', 'area', 'assettitle'], 'full_logs')
+    make_materialized_view(engine, 'day', ['bank', 'clublevel', 'zone', 'area'], 'full_logs')
+
+    make_materialized_view(engine, 'hour', ['bank', 'clublevel', 'zone', 'area', 'assettitle', 'stand'], 'full_logs')
+    make_materialized_view(engine, 'hour', ['bank', 'clublevel', 'zone', 'area', 'stand'], 'full_logs')
+    make_materialized_view(engine, 'hour', ['bank', 'clublevel', 'zone', 'area', 'assettitle'], 'full_logs')
     make_materialized_view(engine, 'hour', ['bank', 'clublevel', 'zone', 'area'], 'full_logs')
+
+    make_materialized_view(engine, 'month', ['bank', 'clublevel', 'zone', 'area', 'assettitle', 'stand'], 'full_logs')
+    make_materialized_view(engine, 'month', ['bank', 'clublevel', 'zone', 'area', 'stand'], 'full_logs')
+    make_materialized_view(engine, 'month', ['bank', 'clublevel', 'zone', 'area', 'assettitle'], 'full_logs')
+    make_materialized_view(engine, 'month', ['bank', 'clublevel', 'zone', 'area'], 'full_logs')

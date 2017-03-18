@@ -20,6 +20,7 @@ from rulebasedquery import translation_dictionary
 import matplotlib.pyplot as plt
 import mpld3
 import numpy as np
+import seaborn
 
 # # Read password from external file
 # with open('passwords.json') as data_file:
@@ -97,12 +98,12 @@ def hbar_plot(df, query_params):
     """
     fig, ax = plt.subplots()
 
-    y_pos = range(df.shape[1]) + .5
-    ax.barh(y_pos, df.factor, align="center", tick_label=df.metric)
+    y_pos = range(df.shape[0]) # + .5
+    ax.barh(y_pos, df.metric, align="center", tick_label=df.factor)
+    return fig
     for i, bar in enumerate(ax.get_children()):
         tooltip = mpld3.plugins.LineLabelTooltip(bar, label=fig.factor[i])
         mpld3.plugins.connect(fig, tooltip)
-
     return fig
 
 

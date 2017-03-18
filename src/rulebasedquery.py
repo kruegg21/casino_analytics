@@ -36,7 +36,7 @@ Set the defauls in the __init__ function of the query parameters class.
 
 from generateresponsefromrequest import get_intent_entity_from_watson
 
-translation_dictionary = {'net' : None,
+translation_dictionary = {'net': None,
                           'revenue': 'SUM(amountbet - amountwon)',
                           'popularity': 'COUNT(*)',
                           'games played': 'SUM(gamesplayed)',
@@ -64,6 +64,7 @@ translation_dictionary = {'net' : None,
 DEFAULT_METRIC = 'revenue'
 DEFAULT_START = '2015-01-01'
 DEFAULT_STOP = '2015-01-31'
+
 
 class query_parameters(object):
     def __init__(self):
@@ -131,7 +132,8 @@ class query_parameters(object):
 
     def translate_to_sql(self):
         if not self.sql_period:
-            self.sql_period = translation_dictionary.get(self.period, self.period)
+            self.sql_period = translation_dictionary.get(
+                self.period, self.period)
 
         if not self.sql_metric:
             if not self.metric:
@@ -139,16 +141,19 @@ class query_parameters(object):
             else:
                 self.sql_metric = self.metric
 
-        self.sql_factors += [translation_dictionary.get(x, x) for x in self.factors]
+        self.sql_factors += [translation_dictionary.get(x, x)
+                             for x in self.factors]
         self.sql_factors = list(set(self.sql_factors))
         self.sql_factors.sort()
 
         if not self.sql_ordering:
-            self.sql_ordering = translation_dictionary.get(self.ordering, self.ordering)
+            self.sql_ordering = translation_dictionary.get(
+                self.ordering, self.ordering)
 
         if not self.sql_start:
             if not self.start:
-                self.sql_start = DEFAULT_START.strftime("%Y-%m-%d-00-00-00-000")
+                self.sql_start = DEFAULT_START.strftime(
+                    "%Y-%m-%d-00-00-00-000")
             else:
                 self.sql_start = self.start.strftime("%Y-%m-%d-00-00-00-000")
 
@@ -159,17 +164,19 @@ class query_parameters(object):
                 self.sql_stop = self.stop.strftime("%Y-%m-%d-23-59-59-999")
 
         if self.club_level:
-            self.sql_club_level = """AND clublevel = '{}'""".format(translation_dictionary.get(self.club_level, self.club_level))
+            self.sql_club_level = """AND clublevel = '{}'""".format(
+                translation_dictionary.get(self.club_level, self.club_level))
         else:
             self.sql_club_level = ''
 
         if self.statistic:
-            self.sql_statistic = """SELECT {}(metric) FROM (""".format(translation_dictionary.get(self.statistic, self.statistic))
+            self.sql_statistic = """SELECT {}(metric) FROM (""".format(
+                translation_dictionary.get(self.statistic, self.statistic))
         else:
             self.sql_statistic = ''
 
     @helper.timeit
-    def generate_query_params_from_response(self, query, response, error_checking = False):
+    def generate_query_params_from_response(self, query, response, error_checking=False):
         '''
         Input:
             response (JSON): this is the raw JSON response from Watson chatbot API
@@ -180,7 +187,8 @@ class query_parameters(object):
         '''
 
         # Turn JSON into Python dictionary
-        response_dict = json.loads(json.dumps(response))['intent_entity_mapping']
+        response_dict = json.loads(json.dumps(response))[
+            'intent_entity_mapping']
 
         # Add query to query parameters object
         self.query = query
@@ -212,10 +220,11 @@ class query_parameters(object):
             if entity['entity'] == 'statistics':
                 self.statistic = entity['value']
             if entity['entity'] == 'sys-date':
-                year = int(entity['value'][:4])
+                # year = int(entity['value'][:4])
+                year = "2015"
                 month = int(entity['value'][5:7])
                 day = int(entity['value'][8:])
-                date = datetime(year, month, day, tzinfo = TIME_ZONE)
+                date = datetime(year, month, day, tzinfo=TIME_ZONE)
                 date_list.append(date)
 
         # Add factor list to query parameters
@@ -225,10 +234,10 @@ class query_parameters(object):
         if date_list:
             self.start = min(date_list)
             self.stop = max(date_list)
-        self.stop = self.stop + timedelta(hours = 23,
-                                          minutes = 59,
-                                          seconds = 59,
-                                          milliseconds = 999)
+        self.stop = self.stop + timedelta(hours=23,
+                                          minutes=59,
+                                          seconds=59,
+                                          milliseconds=999)
 
     # @helper.timeit
     # def generate_sql_query(self):
@@ -274,7 +283,7 @@ class query_parameters(object):
     #     self.sql_string = SQL_string
 
     @helper.timeit
-    def generate_sql_query(self, error_checking = False):
+    def generate_sql_query(self, error_checking=False):
         # Translate entities to SQL
         self.translate_to_sql()
 
@@ -325,7 +334,6 @@ class query_parameters(object):
         self.sql_string = SQL_string
 
 
-
 if __name__ == "__main__":
     # query = 'games played by area january 1st 2015?'
     query = 'what is my hourly revenue by club level, area, zone, stand, wager, manufacturer, game title'
@@ -336,10 +344,11 @@ if __name__ == "__main__":
     # Create query parameters object
     query_params = query_parameters()
     query_params.generate_query_params_from_response(query, response)
-    query_params.generate_sql_query(error_checking = True)
+    query_params.generate_sql_query(error_checking=True)
 
     # Run SQL query
-    engine = helper.connect_to_database(DATABASE_USER, DATABASE_DOMAIN, DATABASE_NAME)
+    engine = helper.connect_to_database(
+        DATABASE_USER, DATABASE_DOMAIN, DATABASE_NAME)
     df = helper.get_sql_data("""SELECT * FROM logs LIMIT 10;""", engine)
     print df.head()
     raw_input()

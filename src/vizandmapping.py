@@ -16,11 +16,11 @@
 # from sqlalchemy import create_engine
 # import json
 from mpld3 import plugins
-from rulebasedquery import translation_dictionary
 import matplotlib.pyplot as plt
 import mpld3
 import numpy as np
 import seaborn
+from translation_dictionaries import *
 
 # # Read password from external file
 # with open('passwords.json') as data_file:
@@ -67,7 +67,7 @@ def line_plot(df, query_params):
         # Make plot for single-line graph
         plt.plot(df.tmstmp, df.metric)
         plt.xlabel('Time')
-        plt.ylabel(query_params.metric)
+        plt.ylabel(human_readable_translation[query_params.sql_metric])
 
         # Shade under curve
         min_y = ax.get_ylim()[0]
@@ -97,6 +97,9 @@ def hbar_plot(df, query_params):
     Returns a horizontal bar plot
     """
     fig, ax = plt.subplots()
+
+    # Add label for x-axis
+    plt.xlabel(human_readable_translation[query_params.sql_metric])
 
     y_pos = range(df.shape[0]) # + .5
     ax.barh(y_pos, df.metric, align="center", tick_label=df.factor)

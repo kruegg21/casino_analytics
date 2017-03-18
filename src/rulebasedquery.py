@@ -13,12 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from generateresponsefromrequest import get_intent_entity_from_watson
 from datetime import datetime, timedelta
 import json
 import pandas as pd
 import psycopg2
 from pytz import timezone
 import helper
+from translation_dictionaries import *
 
 TIME_ZONE = timezone('US/Pacific')
 DATABASE_USER = 'test'
@@ -33,38 +35,6 @@ passed into the data service query.
 
 Set the defauls in the __init__ function of the query parameters class.
 '''
-
-from generateresponsefromrequest import get_intent_entity_from_watson
-
-
-translation_dictionary = {'net' : None,
-                          'netwins': 'SUM(amountbet - amountwon)',
-                          'popularity': 'COUNT(*)',
-                          'games played': 'SUM(gamesplayed)',
-                          'payout rate': 'SUM(amountwon) / SUM(amountbet)',
-                          'club level': 'clublevel',
-                          'game title': 'assettitle',
-                          'wager': 'denom',
-                          'daily': 'day',
-                          'weekly': 'week',
-                          'monthly': 'month',
-                          'yearly': 'year',
-                          'by_minute': 'minute',
-                          'hourly': 'hour',
-                          'best': 'ORDER BY 1 DESC',
-                          'worst': 'ORDER BY 1 ASC',
-                          'date': 'ORDER BY 2',
-                          'bronze': 'BRONZE',
-                          'silver': 'SILVER',
-                          'platinum': 'PLATINUM',
-                          'gold': 'GOLD',
-                          'average': 'AVG',
-                          'median': 'MIN',
-                          'top day': """date_trunc('day', tmstmp)""",
-                          'top hour': """date_trunc('hour', tmstmp)""",
-                          'top minute': """date_trunc('minute', tmstmp)""",
-                          'top month': """date_trunc('month', tmstmp)""",
-                          'top week': """date_trunc('week', tmstmp)"""}
 
 # Default metrics and time ranges
 DEFAULT_METRIC = 'netwins'
@@ -164,8 +134,6 @@ class query_parameters(object):
             else:
                 self.sql_metric = self.metric
 
-        if self.intent == 'machine_performance':
-            self.sql_factors += ['assetnumber']
         self.sql_factors += [translation_dictionary.get(x, x) for x in self.factors]
         self.sql_factors = list(set(self.sql_factors))
         self.sql_factors.sort()
@@ -266,8 +234,8 @@ class query_parameters(object):
             if entity['entity'] == 'time_factors':
                 self.time_factor = entity['value']
             if entity['entity'] == 'sys-date':
-                # year = int(entity['value'][:4])
-                year = "2015"
+                # This is hardcoded, change for production
+                year = 2015
                 month = int(entity['value'][5:7])
                 day = int(entity['value'][8:])
                 date = datetime(year, month, day, tzinfo=TIME_ZONE)
@@ -288,6 +256,10 @@ class query_parameters(object):
         # Calculate number of days
         time_delta = self.stop - self.start
         self.num_days = round(time_delta.days + float(time_delta.seconds) / 86400, 3)
+
+        # Provide necessary factor for machine performance query
+        if self.intent == 'machine_performance':
+            self.factors += ['assetnumber']
 
     # @helper.timeit
     # def generate_sql_query(self):

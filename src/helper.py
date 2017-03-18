@@ -53,11 +53,11 @@ def find_top_specific_factors(df, factor):
             resample_string = '1Min'
 
         # Resample
-        df_1 = df_1.resample(resample_string).sum().sort_values('metric')
+        df_1 = df_1.resample(resample_string).sum().sort_values('metric', ascending = True)
         df_1['factor'] = df_1.index
         df_1['factor'] = df_1.factor.dt.strftime('%Y-%m-%d')
         return df_1
-    return df.groupby([factor], as_index = False).sum().sort_values('metric').rename(columns = {factor: 'factor'})
+    return df.groupby([factor], as_index = False).sum().sort_values('metric', ascending = True).rename(columns = {factor: 'factor'})
 
 def round_timedelta(td, period):
     """

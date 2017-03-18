@@ -9,7 +9,8 @@ import vizandmapping
 from datetime import timedelta
 from sqlalchemy import create_engine
 from generateresponsefromrequest import get_intent_entity_from_watson
-from rulebasedquery import query_parameters, translation_dictionary
+from rulebasedquery import query_parameters
+from translation_dictionaries import *
 
 # Read password from external file
 with open('passwords.json') as data_file:
@@ -32,12 +33,6 @@ engine = create_engine(database_string)
 main_factors = ['bank', 'zone', 'clublevel', 'area']
 specific_factors = ['club_level', 'area', 'game_title', 'manufacturer',
                     'stand', 'zone', 'bank']
-
-human_readable_translation = {'BRONZE': 'bronze level members',
-                              'SILVER': 'silver level members',
-                              'GOLD': 'gold level members',
-                              'PLATINUM': 'platinum level members',
-                              'netwins': 'Net Wins'}
 
 @helper.timeit
 def impute_period(query_params, error_checking = False):
@@ -115,7 +110,10 @@ def get_data_from_nl_query(nl_query, error_checking = False):
     query_params.generate_query_params_from_response(nl_query, response, error_checking = error_checking)
 
     # Add main factors
-    query_params.sql_factors += main_factors
+    if query_params.intent == 'machine_performance':
+        pass
+    else:
+        query_params.sql_factors += main_factors
 
     # Impute period if needed
     query_params = impute_period(query_params)
@@ -196,11 +194,14 @@ def main(query, error_checking = False):
     plot1 = None
     print query_params
 
+    '''
+    Upper left plot
+    '''
     # Dictionary to hold calculated metrics
     metrics = {}
 
     # Determine metrics and graph type to build
-    if query_params.ordering == 'date':
+    if query_params.ordering == 'date' and query_params.intent != 'machine_performance':
         # Line graph
 
         # Find factor we need to aggregate on (currently supports only single factor)
@@ -215,18 +216,25 @@ def main(query, error_checking = False):
             # Multiple factor
             total_metric_for_specific_factors = df_1.groupby(['factor'], as_index = False).sum()
             for index, row in total_metric_for_specific_factors.iterrows():
-                title_string = "{} for {}".format(query_params.metric,
+                # Singe total for specific factor
+                title_string = "{} for {}".format(human_readable_translation[query_params.sql_metric],
                                                   human_readable_translation[row['factor']])
                 metrics[title_string] = row.metric
+
+                # Calculate metric PUPD
+                if query_params.show_as_pupd:
+                    metric_per_day_name = "{} Per Day for {}".format(human_readable_translation[query_params.sql_metric],
+                                                                 human_readable_translation[row['factor']])
+                    metrics[metric_per_day_name] = round(row.metric / (query_params.num_days * query_params.num_machines), 3)
         else:
             # Single total
             total_metric = df_1['metric'].sum()
-            metrics['total ' + query_params.metric] = total_metric
+            metrics['Total ' + human_readable_translation[query_params.sql_metric]] = round(total_metric, 3)
 
-        # Calculate metric PUPD
-        if query_params.show_as_pupd:
-            metric_per_day_name = "{} per day".format(query_params.metric)
-            metrics[metric_per_day_name] = total_metric / (query_params.num_days * query_params.num_machines)
+            # Calculate metric PUPD
+            if query_params.show_as_pupd:
+                metric_per_day_name = "{} Per Day".format(human_readable_translation[query_params.sql_metric])
+                metrics[metric_per_day_name] = round(total_metric / (query_params.num_days * query_params.num_machines), 3)
 
         # Calculate PUPD for each metric
         if query_params.show_as_pupd:
@@ -235,7 +243,7 @@ def main(query, error_checking = False):
         # Make Plot
         plot1 = vizandmapping.makeplot('line', df_1, query_params)
     else:
-        # Histogram
+        # Bar plot
 
         # Find factor (currently supports one factor)
         if query_params.factors:
@@ -250,13 +258,38 @@ def main(query, error_checking = False):
         # Find top specific factors for given factor
         df_1 = helper.find_top_specific_factors(df, factor)
 
+        # Find metrics to display
+        best = df_1.ix[-1, 'factor']
+        metric_for_best = df_1.ix[-1, 'metric']
+        print best, metric_for_best
+        print factor
+        print query_params.sql_metric
+        metric_string = '{} is {} with {}'.format(human_readable_translation[factor],
+                                                  best,
+                                                  human_readable_translation[query_params.sql_metric])
+        metrics[metric_string] = metric_for_best
+
+        # Calculate PUPD for each metric
+        if query_params.show_as_pupd:
+            df_1 = helper.calculate_pupd(df_1, query_params)
+
         # Make plot
         plot1 = vizandmapping.makeplot('hbar', df_1, query_params)
 
-    # Calculate the main factors driving change in metric
+    '''
+    Upper right chart
+    '''
+    if query_params.intent == 'machine_performance':
+        pass
+    else:
+        pass
+        # Calculate the main factors driving change in metric
     mainfactors_df = factor_analysis.get_main_factors(df)
     mainfactors = factor_analysis.translate_mainfactors_df_into_list(mainfactors_df)
 
+    '''
+    Bottom left plot
+    '''
     # Find the top factor from mainfactors
     top_factor = mainfactors[0][0]
     if top_factor[:4] == 'AREA':
@@ -265,15 +298,23 @@ def main(query, error_checking = False):
         factor = 'bank'
     elif top_factor[:4] == 'ZONE':
         factor = 'zone'
+    elif query_params.intent == 'machine_performance':
+        factor = 'assetnumber'
     else:
         factor = 'clublevel'
 
     # Make plot 2
     df_1 = helper.sum_by_time(df, factor)
     plot2 = vizandmapping.makeplot('line', df_1, query_params)
+
+    '''
+    Bottom right chart
+    '''
     derivedmetrics = factor_analysis.create_derivedmetrics()
-    return plot1, plot2, mainfactors[:15], derivedmetrics
+
+    return plot1, plot2, mainfactors[:15], derivedmetrics, metrics
 
 if __name__ == "__main__":
-    query = 'how are my machines doing january 2015'
-    main(query, error_checking = True)
+    query = 'how are my machines doing january'
+    query = 'best day january'
+    print main(query, error_checking = True)

@@ -10,6 +10,8 @@
 	<title>GamingAnalytics.ai</title>
 	<!-- Bootstrap core CSS  -->
 	<link href="../static/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+	<!-- bootstrap Table CSS -->
+	<link href="../static/bootstrap-table/bootstrap-table.css" rel="stylesheet">
 	<!-- Load Site CSS -->
 	<link href="../static/css/global.css" rel="stylesheet">
 	<!-- Content Page CSS -->
@@ -60,9 +62,9 @@
 		<div class="row">
 			<div class="col-md-1"></div>
 			<div class="col-md-11 answer">
-				{% for key, value in statistics.iteritems() %}
+				{% if statistics %} {% for key, value in statistics.iteritems() %}
 				<div class="row">{{ key }}: {{ value }}</div>
-				{% endfor %}
+				{% endfor %} {% endif %}
 			</div>
 		</div>
 
@@ -71,7 +73,7 @@
 				<div>{{plot1|safe}}</div>
 			</div>
 			<div class="col-md-4">
-				<table class="table table-striped table-condensed">
+				<table class="table table-striped table-condensed" data-toggle="table">
 					<thead>
 						<th>Factor</th>
 						<th>Direction</th>
@@ -96,7 +98,7 @@
 			</div>
 
 			<div class="col-md-4">
-				<table class="table table-striped table-condensed">
+				<table class="table table-striped table-condensed" data-toggle="table">
 					<thead>
 						<th>Metric</th>
 						<th>Direction</th>
@@ -115,6 +117,12 @@
 			</div>
 		</div>
 	</div>
+
+	<script src="../static/js/jquery.min.js"></script>
+	<script src="../static/bootstrap/js/bootstrap.min.js"></script>
+	<script src="../static/bootstrap-table/bootstrap-table.js"></script>
+	<!-- put your locale files after bootstrap-table.js -->
+	<script src="../static/bootstrap-table/locale/bootstrap-table-en-US.js"></script>
 
 </body>
 

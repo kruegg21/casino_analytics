@@ -62,7 +62,7 @@ def line_plot(df, query_params):
 
     fig, ax = plt.subplots()
 
-    if df.shape[0] == 2:
+    if df.shape[1] == 2:
         # Make plot for single-line graph
         plt.plot(df.tmstmp, df.metric)
         plt.xlabel('Time')
@@ -73,9 +73,6 @@ def line_plot(df, query_params):
         plt.fill_between(df.tmstmp.values, df.metric.values, min_y, alpha=0.5)
     elif df.shape[0] > 2:
         # Plot multi-line graph
-        factor = translation_dictionary.get(
-            query_params.factors[0], query_params.factors[0])
-
         for unique_item in df['factor'].unique():
             df_subgroup = df[df['factor'] == unique_item]
             # Make plot

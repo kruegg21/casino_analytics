@@ -59,7 +59,7 @@ def search_and_viz():
         on the same page
     '''
     query = str(request.form['user_input'])
-    plot1, plot2, mainfactors, derivedmetrics = create_visualizations(query)
+    plot1, plot2, mainfactors, derivedmetrics = main(query)
     return render_template('index.html', plot1=plot1, plot2=plot2,
                            mainfactors=mainfactors,
                            derivedmetrics=derivedmetrics)

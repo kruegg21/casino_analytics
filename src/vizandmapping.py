@@ -98,9 +98,8 @@ def hbar_plot(df, query_params):
     """
     fig, ax = plt.subplots()
 
-    y_pos = range(df.shape[0]) # + .5
+    y_pos = range(df.shape[0])
     ax.barh(y_pos, df.metric, align="center", tick_label=df.factor)
-    return fig
     for i, bar in enumerate(ax.get_children()):
         tooltip = mpld3.plugins.LineLabelTooltip(bar, label=fig.factor[i])
         mpld3.plugins.connect(fig, tooltip)

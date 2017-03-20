@@ -6,7 +6,7 @@ import numpy as np
 import requests
 import factor_analysis
 import vizandmapping
-from datetime import timedelta
+from datetime import timedelta, datetime
 from sqlalchemy import create_engine
 from generateresponsefromrequest import get_intent_entity_from_watson
 from rulebasedquery import query_parameters
@@ -191,14 +191,87 @@ def main(query, error_checking = False):
     #    single value answer should be provided
 	# O: indicates histogram
 	# S:
-    plot1 = None
-    print query_params
 
-    '''
-    Upper left plot
-    '''
     # Dictionary to hold calculated metrics
     metrics = {}
+
+    # Check if we want to do net win analysis
+    if query_params.intent == 'netwin_analysis':
+        '''
+        Upper left plot
+        '''
+
+        factor = None
+        df_1 = helper.sum_by_time(df, factor)
+
+        metrics['Number of Machines'] = query_params.num_machines
+        metrics['Total Net Win for this {}'.format(human_readable_translation[query_params.period])] = round(df_1.iloc[-1].metric, 3)
+
+        df_1 = helper.calculate_pupd(df_1, query_params)
+
+        metrics['Net Win PUPD for this {}'.format(human_readable_translation[query_params.period])] = round(df_1.iloc[-1].metric, 3)
+
+        plot_1 = vizandmapping.makeplot('line', df_1, query_params)
+
+        '''
+        Upper right table
+        '''
+        table_metrics = [(human_readable_translation[query_params.period]), (''), ('Net Win PUPD')]
+        mainfactors = []
+        for i in xrange(1, len(df_1) + 1):
+            mainfactors.append((datetime.strftime(df_1.iloc[-i]['tmstmp'], "%Y-%m-%d"), '', round(df_1.iloc[-i]['metric'], 3)))
+
+        '''
+        Bottom left table
+        '''
+        query_params_2 = query_parameters()
+        query_params_2.start = query_params.start
+        query_params_2.stop = query_params.stop
+        query_params_2.period = query_params.period
+        query_params_2.factors = main_factors
+
+        query_params_2.generate_sql_query()
+
+        df = helper.get_sql_data(query_params_2.sql_string, engine)
+
+        df_1 = helper.sum_by_time(df, 'bank')
+        most_recent_period = df_1.iloc[-1].tmstmp
+
+        df_1 = helper.calculate_pupd(df_1, query_params)
+
+        # Adjust for fact we have 8 machines per bank
+        df_1.metric = df_1.metric * (192 / 8)
+
+        # Get most recent
+        df_1 = df_1[df_1.tmstmp == most_recent_period]
+        df_1['total'] = df_1.metric * 8
+        house_average = df_1.metric.mean()
+
+        # Sort by Net Win PUPD
+        df_1.sort_values('metric', inplace = True)
+
+
+        bottom_left_table_metrics = ('Bank', 'Total Net Win', 'Net Win PUPD', 'House Average')
+
+        bottom_left_table = []
+        for i in xrange(1, len(df_1) + 1):
+            bottom_left_table.append((df_1.iloc[-i]['factor'], df_1.iloc[-i]['total'], df_1.iloc[-i]['metric'], house_average))
+
+        '''
+        Bottom right table
+        '''
+        query_params_3 = query_parameters()
+        query_params_3.start = query_params.start
+        query_params_3.stop = query_params.stop
+        query_params_3.period = query_params.period
+        query_params_3.factors = ['assettitle']
+
+        query_params_3.generate_sql_query(error_checking = error_checking)
+        print query_params_3
+
+        derivedmetrics = factor_analysis.create_derivedmetrics()
+
+        return plot_1, None, mainfactors, derivedmetrics, metrics, table_metrics, bottom_left_table, bottom_left_table_metrics
 
     # Determine metrics and graph type to build
     if query_params.ordering == 'date' and query_params.intent != 'machine_performance':
@@ -211,34 +284,34 @@ def main(query, error_checking = False):
             factor = None
         df_1 = helper.sum_by_time(df, factor)
 
+        # Calculate number of days
+        query_params.num_days = len(df_1.tmstmp.unique()) * query_params.days_per_interval
+
         # Calculate metric total we are interested in
         if factor:
             # Multiple factor
             total_metric_for_specific_factors = df_1.groupby(['factor'], as_index = False).sum()
             for index, row in total_metric_for_specific_factors.iterrows():
-                # Singe total for specific factor
-                title_string = "{} for {}".format(human_readable_translation[query_params.sql_metric],
-                                                  human_readable_translation[row['factor']])
-                metrics[title_string] = row.metric
-
                 # Calculate metric PUPD
                 if query_params.show_as_pupd:
-                    metric_per_day_name = "{} Per Day for {}".format(human_readable_translation[query_params.sql_metric],
+                    metric_per_day_name = "{} for {}".format(human_readable_translation[query_params.sql_metric],
                                                                  human_readable_translation[row['factor']])
                     metrics[metric_per_day_name] = round(row.metric / (query_params.num_days * query_params.num_machines), 3)
         else:
             # Single total
             total_metric = df_1['metric'].sum()
-            metrics['Total ' + human_readable_translation[query_params.sql_metric]] = round(total_metric, 3)
 
             # Calculate metric PUPD
             if query_params.show_as_pupd:
-                metric_per_day_name = "{} Per Day".format(human_readable_translation[query_params.sql_metric])
+                metric_per_day_name = "{}".format(human_readable_translation[query_params.sql_metric])
                 metrics[metric_per_day_name] = round(total_metric / (query_params.num_days * query_params.num_machines), 3)
 
         # Calculate PUPD for each metric
         if query_params.show_as_pupd:
             df_1 = helper.calculate_pupd(df_1, query_params)
+
+        # Round to 3 decimal places
+        df_1 = df_1.round(3)
 
         # Make Plot
         plot1 = vizandmapping.makeplot('line', df_1, query_params)
@@ -256,22 +329,34 @@ def main(query, error_checking = False):
             factor = query_params.time_factor
 
         # Find top specific factors for given factor
-        df_1 = helper.find_top_specific_factors(df, factor)
-
-        # Find metrics to display
-        best = df_1.ix[-1, 'factor']
-        metric_for_best = df_1.ix[-1, 'metric']
-        print best, metric_for_best
-        print factor
-        print query_params.sql_metric
-        metric_string = '{} is {} with {}'.format(human_readable_translation[factor],
-                                                  best,
-                                                  human_readable_translation[query_params.sql_metric])
-        metrics[metric_string] = metric_for_best
+        df_1 = helper.find_top_specific_factors(df, factor, query_params)
 
         # Calculate PUPD for each metric
         if query_params.show_as_pupd:
             df_1 = helper.calculate_pupd(df_1, query_params)
+
+        # Find metrics to display
+        if query_params.ordering == 'best' or query_params.intent == 'machine_performance':
+            best = df_1.iloc[-1]['factor']
+            metric_for_best = df_1.iloc[-1]['metric']
+            metric_string = 'Best {} is {} with {}'.format(human_readable_translation.get(factor, factor),
+                                                           human_readable_translation.get(best, best),
+                                                           human_readable_translation.get(query_params.sql_metric, query_params.sql_metric))
+            metrics[metric_string] = round(metric_for_best, 3)
+        else:
+            worst = df_1.iloc[0]['factor']
+            metric_for_worst = df_1.iloc[0]['metric']
+            metric_string = 'Worst {} is {} with {}'.format(human_readable_translation.get(factor),
+                                                            human_readable_translation.get(worst, worst),
+                                                            human_readable_translation.get(query_params.sql_metric, query_params.sql_metric))
+            metrics[metric_string] = round(metric_for_worst, 3)
+
+        # Round decimals to 3 places
+        df_1 = df_1.round(3)
+
+        # Filter most important
+        df_1 = df_1.iloc[-15:,:]
+        df_1 = df_1.reset_index(drop = True)
 
         # Make plot
         plot1 = vizandmapping.makeplot('hbar', df_1, query_params)
@@ -283,38 +368,58 @@ def main(query, error_checking = False):
         pass
     else:
         pass
+
+    if query_params.ordering != 'date' or query_params.intent == 'machine_performance':
+        print df_1
+        print len(df_1)
+        mainfactors = []
+        if len(df_1) <= 15:
+            for i in xrange(1, len(df_1) + 1):
+                mainfactors.append((df_1.iloc[-i]['factor'], '', df_1.iloc[-i]['metric']))
+        else:
+            for i in xrange(1,16):
+                mainfactors.append((df_1.iloc[-i]['factor'], '', df_1.iloc[-i]['metric']))
+        table_metrics = [('Net Win PUPD')]
+    else:
         # Calculate the main factors driving change in metric
-    mainfactors_df = factor_analysis.get_main_factors(df)
-    mainfactors = factor_analysis.translate_mainfactors_df_into_list(mainfactors_df)
+        mainfactors_df = factor_analysis.get_main_factors(df)
+        mainfactors = factor_analysis.translate_mainfactors_df_into_list(mainfactors_df)
+        table_metrics = [('Total Net Win')]
+
 
     '''
     Bottom left plot
     '''
     # Find the top factor from mainfactors
-    top_factor = mainfactors[0][0]
-    if top_factor[:4] == 'AREA':
-        factor = 'area'
-    elif top_factor[:4] == 'BANK':
-        factor = 'bank'
-    elif top_factor[:4] == 'ZONE':
-        factor = 'zone'
-    elif query_params.intent == 'machine_performance':
-        factor = 'assetnumber'
+    if query_params.ordering != 'date' or query_params.intent == 'machine_performance':
+        plot2 = ''
     else:
-        factor = 'clublevel'
+        # Make plot 2
+        specific_factor = mainfactors[0][0]
+        if specific_factor[:4] == 'AREA':
+            factor = 'area'
+        elif specific_factor[:4] == 'BANK':
+            factor = 'bank'
+        elif specific_factor[:4] == 'ZONE':
+            factor = 'zone'
+        else:
+            factor = 'clublevel'
 
-    # Make plot 2
-    df_1 = helper.sum_by_time(df, factor)
-    plot2 = vizandmapping.makeplot('line', df_1, query_params)
+        df_1 = helper.filter_by_specific_factor(df, factor, specific_factor)
+        print df_1.head()
+        # plot2 = vizandmapping.makeplot('line', df_1, query_params)
+        plot2 = ''
 
     '''
     Bottom right chart
     '''
     derivedmetrics = factor_analysis.create_derivedmetrics()
+    # derivedmetrics = None
 
-    return plot1, plot2, mainfactors[:15], derivedmetrics, metrics
+    return plot1, plot2, mainfactors[:15], derivedmetrics, metrics, table_metrics, None, None
 
 if __name__ == "__main__":
     query = 'how are my machines doing january'
-    query = 'best day january'
-    print main(query, error_checking = True)
+    query = 'how are my machines doing january'
+    query = 'what is my net win weekly'
+    main(query, error_checking = True)

@@ -34,28 +34,38 @@ def sum_by_time(df, factor, pupd = True):
         return df.groupby(['tmstmp'], as_index = False).sum()
 
 @timeit
-def find_top_specific_factors(df, factor):
+def find_top_specific_factors(df, factor, query_params):
     '''
     Clean this god awful function up when you get the chance
     '''
-    if factor[:3] == 'top':
+    if factor[:3] == 'top' or factor[:5] == 'worst':
         # Our factor is a time factor
         df_1 = df.set_index(pd.DatetimeIndex(df['tmstmp']))
         if factor == 'top month':
             resample_string = 'M'
+            # Make more exact
+            adjustment = 31
         if factor == 'top week':
             resample_string = 'W'
-        if factor == 'top day':
+            adjustment = 7
+        if factor == 'top day' or factor == 'worst day':
             resample_string = '1D'
+            adjustment = 1
         if factor == 'top hour':
             resample_string = '60Min'
+            adjustment = float(1) / 24
         if factor == 'top minute':
             resample_string = '1Min'
+            adjustment = float(1) / 1440
 
         # Resample
         df_1 = df_1.resample(resample_string).sum().sort_values('metric', ascending = True)
         df_1['factor'] = df_1.index
         df_1['factor'] = df_1.factor.dt.strftime('%Y-%m-%d')
+
+        # Adjust metric for PUPD calculation
+        df_1['metric'] = (df_1['metric'] * query_params.days_per_interval) / float(adjustment)
+
         return df_1
     return df.groupby([factor], as_index = False).sum().sort_values('metric', ascending = True).rename(columns = {factor: 'factor'})
 
@@ -94,3 +104,8 @@ def calculate_pupd(df, query_params):
     '''
     df['metric'] = df.metric / (query_params.days_per_interval * query_params.num_machines)
     return df
+
+@timeit
+def filter_by_specific_factor(df, factor, specific_factor):
+    df_filtered = df[df[factor] == specific_factor]
+    return df.groupby(['tmstmp', factor], as_index = False).sum().rename(columns = {factor: 'factor'})

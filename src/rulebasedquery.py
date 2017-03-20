@@ -261,6 +261,16 @@ class query_parameters(object):
         if self.intent == 'machine_performance':
             self.factors += ['assetnumber']
 
+        # Add parameters if doing net win analysis
+        if self.intent == 'netwin_analysis':
+            # Establish range (2 years as default)
+            self.stop = datetime.now(tz = TIME_ZONE) - timedelta(days = 365 * 2 + 20)
+            self.start = self.stop - timedelta(days = 30 * 2)
+
+            # Establish period
+            if not self.period:
+                self.period = 'week'
+
     # @helper.timeit
     # def generate_sql_query(self):
     #     # Translate entities to SQL
@@ -342,17 +352,16 @@ class query_parameters(object):
                    FROM {}
                    WHERE {} >= to_timestamp('{}', 'YYYY-MM-DD-HH24-MI-SS-MS')
                    AND {} <= to_timestamp('{}', 'YYYY-MM-DD-HH24-MI-SS-MS')
-                   {}{}""".format(self.sql_statistic,
-                                  self.sql_metric,
-                                  self.sql_period,
-                                  factors_string,
-                                  title_string,
-                                  self.sql_period,
-                                  self.sql_start,
-                                  self.sql_period,
-                                  self.sql_stop,
-                                  self.sql_ordering,
-                                  suffix)
+                   {}""".format(self.sql_statistic,
+                                self.sql_metric,
+                                self.sql_period,
+                                factors_string,
+                                title_string,
+                                self.sql_period,
+                                self.sql_start,
+                                self.sql_period,
+                                self.sql_stop,
+                                suffix)
         else:
             # Create SQL query
             SQL_string = \
@@ -360,7 +369,7 @@ class query_parameters(object):
                    FROM {}
                    WHERE {} >= to_timestamp('{}', 'YYYY-MM-DD-HH24-MI-SS-MS')
                    AND {} <= to_timestamp('{}', 'YYYY-MM-DD-HH24-MI-SS-MS')
-                   {}{}""".format(self.sql_statistic,
+                   {}""".format(self.sql_statistic,
                                   self.sql_metric,
                                   self.sql_period,
                                   factors_string,
@@ -369,7 +378,6 @@ class query_parameters(object):
                                   self.sql_start,
                                   self.sql_period,
                                   self.sql_stop,
-                                  self.sql_ordering,
                                   suffix)
             if error_checking:
                 print "SQL string: {}".format(SQL_string)
@@ -394,7 +402,6 @@ if __name__ == "__main__":
         DATABASE_USER, DATABASE_DOMAIN, DATABASE_NAME)
     df = helper.get_sql_data("""SELECT * FROM logs LIMIT 10;""", engine)
     print df.head()
-    raw_input()
     df = helper.get_sql_data(query_params.sql_string, engine)
     print df.head(10)
     print len(df)

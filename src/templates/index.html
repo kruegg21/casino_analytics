@@ -59,13 +59,16 @@
 	</nav>
 
 	<div class="container-fluid">
-		<div class="row">
-			<div class="col-md-1"></div>
-			<div class="col-md-11 answer">
+		{% if statistics %} {% for key, value in statistics.iteritems() %}
+		<div class="row"><font size="3">{{ key }}: {{ value }}</font></div>
+		{% endfor %} {% endif %}
+		<!-- <div class="row"> <
+			<div class="col-sm-1"></div>
+				<div class="col-md-11 answer">
 				{% if statistics %} {% for key, value in statistics.iteritems() %}
-				<div class="row">{{ key }}: {{ value }}</div>
+				<div class="row"><font size="3">{{ key }}: {{ value }}</font></div>
 				{% endfor %} {% endif %}
-			</div>
+			</div> -->
 		</div>
 
 		<div class="row">
@@ -75,9 +78,9 @@
 			<div class="col-md-4">
 				<table class="table table-striped table-condensed" data-toggle="table">
 					<thead>
-						<th>Factor</th>
-						<th>Direction</th>
-						<th>Change</th>
+						{% for metric in table_metrics %}
+						<th>{{ metric }}</th>
+						{% endfor %}
 					</thead>
 					<tbody>
 						{% for factor, direction, change in mainfactors %}
@@ -92,17 +95,42 @@
 			</div>
 		</div>
 
+		{% if plot %}
 		<div class="row">
 			<div class="col-md-8">
 				{{plot2|safe}}
 			</div>
+		{% endif %}
 
-			<div class="col-md-4">
+		{% if bottom_left_table %}
+		<div class="col-md-8">
+			<table class="table table-striped table-condensed" data-toggle="table">
+				<thead>
+					{% for metric in bottom_left_table_metrics %}
+					<th>{{ metric }}</th>
+					{% endfor %}
+				</thead>
+				<tbody>
+					{% for factor, direction, change, fourth in bottom_left_table %}
+					<tr>
+						<td>{{ factor }}</td>
+						<td>{{ direction }}</td>
+						<td>{{ change }}</td>
+						<td>{{ fourth }}</td>
+					</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+		</div>
+		{% endif %}
+
+
+			<!-- <div class="col-md-4">
 				<table class="table table-striped table-condensed" data-toggle="table">
 					<thead>
-						<th>Metric</th>
-						<th>Direction</th>
-						<th>Change</th>
+						{% for metric in table_metrics_2 %}
+						<th>{{ metric }}</th>
+						{% endfor %}
 					</thead>
 					<tbody>
 						{% for metric, direction, change in derivedmetrics %}
@@ -114,7 +142,7 @@
 						{% endfor %}
 					</tbody>
 				</table>
-			</div>
+			</div> -->
 		</div>
 	</div>
 

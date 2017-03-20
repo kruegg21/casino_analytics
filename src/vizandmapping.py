@@ -102,9 +102,13 @@ def hbar_plot(df, query_params):
     plt.xlabel(human_readable_translation[query_params.sql_metric])
 
     y_pos = range(df.shape[0])
-    ax.barh(y_pos, df.metric, align="center", tick_label=df.factor)
-    for i, bar in enumerate(ax.get_children()):
-        tooltip = mpld3.plugins.LineLabelTooltip(bar, label=fig.factor[i])
+    # ax.barh(y_pos, df.metric, align="center", tick_label=df.factor)
+    ax.barh(y_pos, df.metric)
+
+    label_locations = [x + 0.4 for x in xrange(len(df))]
+    plt.yticks(label_locations, df.factor)
+    for i, bar in enumerate(ax.get_children()[:df.shape[0]]):
+        tooltip = mpld3.plugins.LineLabelTooltip(bar, label=df.metric[i])
         mpld3.plugins.connect(fig, tooltip)
     return fig
 

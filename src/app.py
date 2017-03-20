@@ -59,11 +59,14 @@ def search_and_viz():
         on the same page
     '''
     query = str(request.form['user_input'])
-    plot1, plot2, mainfactors, derivedmetrics, metrics = main(query)
+    plot1, plot2, mainfactors, derivedmetrics, metrics, table_metrics, bottom_left_table, bottom_left_table_metrics = main(query)
     return render_template('index.html', plot1=plot1, plot2=plot2,
                            mainfactors=mainfactors,
                            derivedmetrics=derivedmetrics,
-                           statistics=metrics)
+                           statistics=metrics,
+                           table_metrics=table_metrics,
+                           bottom_left_table=bottom_left_table,
+                           bottom_left_table_metrics=bottom_left_table_metrics)
 
 
 @app.errorhandler(404)

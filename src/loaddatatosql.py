@@ -148,7 +148,7 @@ def create_table(engine):
     connection = engine.connect()
 
     # Make table
-    SQL_string = """CREATE TABLE full_logs (
+    SQL_string = """CREATE TABLE current_logs (
                     assetNumber      varchar(12),
                     assetTitle       varchar(60),
                     manufacturer     varchar(12),
@@ -187,10 +187,10 @@ if __name__ == "__main__":
     engine = create_engine(database_string)
     create_table(engine)
 
-    dataset_name = '0-10mil.csv'
-    df = pd.read_csv('../../data/{}'.format(dataset_name))
-    df = process_playlogs_data(df)
-    df.to_csv('{}_processed.csv'.format(dataset_name), index = False)
+    # dataset_name = 'playlogs0318_01.csv'
+    # df = pd.read_csv('../data/{}'.format(dataset_name))
+    # df = process_playlogs_data(df)
+    # df.to_csv('{}_processed.csv'.format(dataset_name), index = False)
 
     # df = pd.read_csv('../data/playlogs.csv')
     # print('loaded dataframe')

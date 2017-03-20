@@ -45,6 +45,9 @@ def get_main_factors(factor_df):
         information on the absolute value change of a factor over a time period
         by comparing the total in the first and second half of the time period
     '''
+    if 'tmstmp' not in factor_df.columns:
+        return factor_df.sort_values('metric', ascending = False)
+
     timeperiods = np.unique(factor_df.tmstmp)
     n_timeperiods = len(timeperiods)
     mid = n_timeperiods / 2
@@ -62,16 +65,19 @@ def get_main_factors(factor_df):
     factor_list = list(factor_df.columns)
     factor_list.remove('tmstmp')
     factor_list.remove('metric')
-    for factor in factor_list:
-        df_list.append(create_factor_comparison_df(first_half, second_half,
-                                                   factor))
-    mainfactors_df = pd.concat(df_list)
-    mainfactors_df['abs_diff'] = \
-        np.abs(mainfactors_df['second_half'] - mainfactors_df['first_half'])
-    mainfactors_df = mainfactors_df.sort_values(by='abs_diff', ascending=False)
-    mainfactors_df = mainfactors_df.reset_index()
-    mainfactors_df.drop('index', axis=1, inplace=True)
-    return mainfactors_df
+    if factor_list:
+        for factor in factor_list:
+            df_list.append(create_factor_comparison_df(first_half, second_half,
+                                                       factor))
+        mainfactors_df = pd.concat(df_list)
+        mainfactors_df['abs_diff'] = \
+            np.abs(mainfactors_df['second_half'] - mainfactors_df['first_half'])
+        mainfactors_df = mainfactors_df.sort_values(by='abs_diff', ascending=False)
+        mainfactors_df = mainfactors_df.reset_index()
+        mainfactors_df.drop('index', axis=1, inplace=True)
+        return mainfactors_df
+    else:
+        return None
 
 @helper.timeit
 def translate_mainfactors_df_into_list(mainfactors_df):
@@ -91,6 +97,11 @@ def translate_mainfactors_df_into_list(mainfactors_df):
         second_half = mainfactors_df.ix[row].second_half
         direction = 'up' if second_half >= first_half else 'down'
         difference = round(second_half - first_half, 2)
+        difference = '$' + str(abs(difference))
+        if direction == 'down':
+            difference = '-' + difference
+        else:
+            difference = '+' + difference
         mainfactors.append((factor, direction, difference))
     return mainfactors
 

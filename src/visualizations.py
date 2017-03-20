@@ -41,7 +41,7 @@ from translation_dictionaries import *
 # engine = create_engine(database_string)
 
 
-def makeplot(p_type, df, query_params):
+def makeplot(p_type, df, query_params, text):
     '''
     INPUT: string, pandas dataframe, object
     OUTPUT: plot as html string
@@ -52,18 +52,17 @@ def makeplot(p_type, df, query_params):
 
     plot = {"line": line_plot, "hbar": hbar_plot}
 
-    return mpld3.fig_to_html(plot[p_type](df, query_params))
+    return mpld3.fig_to_html(plot[p_type](df, query_params, text))
 
 
-def line_plot(df, query_params):
+def line_plot(df, query_params, text):
     '''
     INPUT: pandas dataframe
     OUTPUT: matplotlib figure
     '''
-
     fig, ax = plt.subplots()
 
-    if df.shape[1] == 2:
+    if 'factor' not in df.columns:
         # Make plot for single-line graph
         plt.plot(df.tmstmp, df.metric)
         plt.xlabel('Time')
@@ -72,24 +71,45 @@ def line_plot(df, query_params):
         # Shade under curve
         min_y = ax.get_ylim()[0]
         plt.fill_between(df.tmstmp.values, df.metric.values, min_y, alpha=0.5)
-    elif df.shape[0] > 2:
+
+        # Add text box
+        ctr = 1
+        for key, value in text.iteritems():
+            textstr = str(key)
+            textstr += ': '
+            textstr += str(value)
+            textstr += '\n'
+            plt.annotate(textstr, xy=(1,ctr * 12))
+            ctr += 1
+
+    else:
+        # Add text box
+        print "adding text box"
+        ctr = 1
+        for key, value in text.iteritems():
+            textstr = str(key)
+            textstr += ': '
+            textstr += str(value)
+            textstr += '\n'
+            plt.annotate(textstr, xy=(1,ctr * 12))
+            ctr += 1
+
         # Plot multi-line graph
         for unique_item in df['factor'].unique():
             df_subgroup = df[df['factor'] == unique_item]
             # Make plot
             plt.plot(df_subgroup.tmstmp, df_subgroup.metric, label=unique_item)
+            plt.legend()
             # Make interactive legend
-            handles, labels = ax.get_legend_handles_labels()
-            interactive_legend = plugins.InteractiveLegendPlugin(zip(
-                handles, ax.collections), labels, alpha_unsel=0.5, alpha_over=1.5, start_visible=True)
-            plugins.connect(fig, interactive_legend)
-    else:
-        pass
+            # handles, labels = ax.get_legend_handles_labels()
+            # interactive_legend = plugins.InteractiveLegendPlugin(zip(
+            #     handles, ax.collections), labels, alpha_unsel=0.5, alpha_over=1.5, start_visible=True)
+            # plugins.connect(fig, interactive_legend)
 
     return fig
 
 
-def hbar_plot(df, query_params):
+def hbar_plot(df, query_params, text):
     """
     INPUT: dataframe with metric and factor columns
     OUTPUT: matplotlib figure
@@ -113,7 +133,7 @@ def hbar_plot(df, query_params):
     return fig
 
 
-def hist_plot(df, query_params):
+def hist_plot(df, query_params, text):
     """
     INPUT: dataframe with metric and factor columns
     OUTPUT: matplotlib figure

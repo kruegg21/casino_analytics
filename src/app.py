@@ -59,14 +59,35 @@ def search_and_viz():
         on the same page
     '''
     query = str(request.form['user_input'])
-    plot1, plot2, mainfactors, derivedmetrics, metrics, table_metrics, bottom_left_table, bottom_left_table_metrics = main(query)
-    return render_template('index.html', plot1=plot1, plot2=plot2,
-                           mainfactors=mainfactors,
-                           derivedmetrics=derivedmetrics,
-                           statistics=metrics,
-                           table_metrics=table_metrics,
-                           bottom_left_table=bottom_left_table,
-                           bottom_left_table_metrics=bottom_left_table_metrics)
+    tl_quadrant, tr_quadrant, bl_quadrant, br_quadrant = main(query)
+    return render_template('index.html',
+                           bl_plot=bl_quadrant.plot,
+                           bl_title=bl_quadrant.title,
+                           bl_column_titles=bl_quadrant.column_titles,
+                           bl_table=bl_quadrant.table_data,
+                           br_plot=br_quadrant.plot,
+                           br_title=br_quadrant.title,
+                           br_column_titles=br_quadrant.column_titles,
+                           br_table=br_quadrant.table_data,
+                           tl_plot=tl_quadrant.plot,
+                           tl_title=tl_quadrant.title,
+                           tl_column_titles=tl_quadrant.column_titles,
+                           tl_table=tl_quadrant.table_data,
+                           tr_plot=tr_quadrant.plot,
+                           tr_title=tr_quadrant.title,
+                           tr_column_titles=tr_quadrant.column_titles,
+                           tr_table=tr_quadrant.table_data)
+                        #    plot1=plot1,
+                        #    plot2=plot2,
+                        #    mainfactors=mainfactors,
+                        #    derivedmetrics=derivedmetrics,
+                        #    statistics=metrics,
+                        #    table_metrics=table_metrics,
+                        #    table_metrics2=table_metrics2,
+                        #    bottom_left_table=bottom_left_table,
+                        #    bottom_left_table_metrics=bottom_left_table_metrics,
+                        #    table_title1=table_title1,
+                        #    table_title2=table_title2)
 
 
 @app.errorhandler(404)

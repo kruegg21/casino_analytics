@@ -1,5 +1,5 @@
 from sqlalchemy import create_engine
-from datetime import timedelta
+from datetime import timedelta, datetime
 import pandas as pd
 import time
 
@@ -23,8 +23,14 @@ def connect_to_database(user, domain, name):
     return engine
 
 @timeit
-def get_sql_data(query, engine):
-    return pd.read_sql_query(query, con = engine)
+def get_sql_data(query, engine, in_memory = False):
+    '''
+    Add in memory capability
+    '''
+    if in_memory:
+        pass
+    else:
+        return pd.read_sql_query(query, con = engine)
 
 @timeit
 def sum_by_time(df, factor, pupd = True):
@@ -94,6 +100,7 @@ def get_number_days(query_params):
     num_days = query_params.stop - query_params.start
     return round_timedelta(num_days, timedelta(days = 1)).days
 
+@timeit
 def calculate_pupd(df, query_params):
     '''
     Calculates the PUPD (per unit per day) value for column 'metric' in df,
@@ -102,10 +109,60 @@ def calculate_pupd(df, query_params):
         df -- DataFrame
         query_params -- query_parameters object
     '''
+    df['total'] = df.metric
     df['metric'] = df.metric / (query_params.days_per_interval * query_params.num_machines)
     return df
+
+def convert_money_to_string(f):
+    '''
+    Turns dollar float into human readable string
+    '''
+
+    return '$' + str(format(round(f, 3), ",.3f"))
+
+def convert_datetime_to_string(dt, period):
+    '''
+    Turns python datetime object into the correct string for a given query
+    parameter
+    Input:
+        dt (datetime) -- datetime object
+        period (str) -- string of the period we want to concatenate datetime to
+    '''
+    s = ''
+    if period == 'year':
+        s = datetime.strftime(dt, "%Y")
+    elif period == 'month':
+        s = datetime.strftime(dt, "%B %Y")
+    elif period == 'quarter':
+        quarter = (dt.month-1)//3
+        year = datetime.strftime(dt, "%Y")
+        if quarter == 0:
+            quarter_string = 'First'
+        elif quarter == 1:
+            quarter_string = 'Second'
+        elif quarter == 2:
+            quarter_string = 'Third'
+        else:
+            quarter_string = 'Fourth'
+        s = quarter_string + ' Quarter of ' + year
+    elif period == 'week':
+        s = 'Week of ' + datetime.strftime(dt, "%Y-%m-%d")
+    elif period == 'day':
+        s = datetime.strftime(dt, "%Y-%m-%d")
+    elif period == 'hour':
+        s = datetime.strftime(dt, "%Y-%m-%d %H:00:00")
+    elif period == 'minute':
+        s = datetime.strftime(dt, "%Y-%m-%d %H:%M:00")
+    else:
+        pass
+    return s
 
 @timeit
 def filter_by_specific_factor(df, factor, specific_factor):
     df_filtered = df[df[factor] == specific_factor]
     return df.groupby(['tmstmp', factor], as_index = False).sum().rename(columns = {factor: 'factor'})
+
+if __name__ == "__main__":
+    dt = datetime.strptime('Jun 1 2005  1:33PM', '%b %d %Y %I:%M%p')
+    period = 'minute'
+    convert_datetime_to_string(dt, period)

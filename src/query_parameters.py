@@ -187,7 +187,6 @@ class query_parameters(object):
         if self.sql_metric == 'handlepulls':
             self.show_as_pupd = True
 
-    @helper.timeit
     def generate_query_params_from_response(self, query, response, error_checking=False):
         '''
         Input:
@@ -235,7 +234,7 @@ class query_parameters(object):
                 self.time_factor = entity['value']
             if entity['entity'] == 'sys-date':
                 # This is hardcoded, change for production
-                year = 2015
+                year = int(entity['value'][:4])
                 month = int(entity['value'][5:7])
                 day = int(entity['value'][8:])
                 date = datetime(year, month, day, tzinfo=TIME_ZONE)
@@ -264,12 +263,12 @@ class query_parameters(object):
         # Add parameters if doing net win analysis
         if self.intent == 'netwin_analysis':
             # Establish range (2 years as default)
-            self.stop = datetime.now(tz = TIME_ZONE) - timedelta(days = 365 * 2 + 20)
-            self.start = self.stop - timedelta(days = 30 * 2)
+            self.stop = datetime.now(tz = TIME_ZONE)
+            self.start = self.stop - timedelta(days = 365 * 2)
 
             # Establish period
             if not self.period:
-                self.period = 'week'
+                self.period = 'month'
 
     # @helper.timeit
     # def generate_sql_query(self):
@@ -314,7 +313,6 @@ class query_parameters(object):
     #
     #     self.sql_string = SQL_string
 
-    @helper.timeit
     def generate_sql_query(self, error_checking=False):
         # Translate entities to SQL
         self.translate_to_sql()

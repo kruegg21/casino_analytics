@@ -1,0 +1,191 @@
+What is revenue today? (metric for range)
+	M: Revenue
+	F: 
+	SF:
+	R: 2017-03-06-00-00  to 2017-03-06-23-59
+	P: 
+	O: 
+	S: 
+
+	Visual:
+		1. Total revenue and related statistics for today
+		2. Minute by minute revenue for last 24 hours
+
+MVP:
+	Total revenue for that day
+	Graph of hourly metric for that day
+Ideal:
+
+What is revenue by club level today? (metric by factor by time period)
+	M: Revenue
+	F: Club Level
+	SF:
+	R: 2017-03-06-00-00  to 2017-03-06-23-59
+	P: 
+	O: 
+	S: 
+
+What is the revenue by club level in January daily?
+	
+
+What is the revenue for January daily? (metric for range by time period)
+	M: Revenue
+	F: 
+	SF: 
+	R: 2017-01-01 to 2017-01-31
+	P: Daily
+	O: 
+	S:
+
+	Visual:
+		1. Daily revenue for January
+		2. Drivers for change
+
+MVP:
+	Graph of daily metrics for that month
+	
+
+What is the revenue for gold-members in January? (metric for range by specific factor)
+	M: Revenue
+	F: 
+	SF: Club Level (gold-members)
+	R: 2017-01-01 to 2017-01-31
+	P:
+	O:
+	S:
+	
+	Visual:
+		1. Total revenue for gold-members in January
+		2. 
+
+What is the revenue for gold-members in January daily? (metric for time period by range by specific factor)
+	M: Revenue
+	F: 
+	SF: Club Level (specific factor)
+	R: 2017-01-01 to 2017-01-31
+	P: Daily
+	O:
+	S:
+	
+	Visual:
+		1. Total revenue for gold-members in January
+		2. 	
+
+What is the highest revenue bank in January? (metric by factor for time period)
+What is the revenue by bank in January?
+	M: Revenue
+	F: Bank
+	SF:
+	R: 2017-01-01 to 2017-01-31
+	P: 
+	O: Top
+	S:
+
+	Visual:
+		1. Histogram of most popular machines
+		2. Line graph of top machine trends
+		3. Drivers
+
+What is the highest revenue bank? (metric by factor open-ended)
+What is the revenue by bank?
+	M: Popularity
+	F: Bank
+	SF:
+	R: 
+	P:
+	O: Top
+	S: 
+
+	Visual
+		1. Histogram of most popular machines
+		2. Line graph of top machine trends
+		3. Drivers
+
+Best day last month? (top metric by time period)
+	M: Revenue
+	F: 
+	SF: 
+	R: 2017-01-01 to 2017-01-31
+	P: Daily
+	O: Top
+	S:
+	
+	Visual:
+		1. Line graph days last month
+
+What are the highest revenue banks for gold members games? (metric by factor by specific factor open-ended)
+	M: Revenue
+	F: Bank
+	SF: Club-Level (specific factor)
+	R:
+	P:
+	O: Top
+	S:
+
+	Visual:
+		1. Histogram of 
+
+What is the highest revenue bank for gold members in January? (metric by factor by specific factor for time period)
+	M: Revenue
+	F: Bank
+	SF: Club-Level (specific factor)
+	R: 2017-01-01 to 2017-01-31
+	P: 
+	O: Top
+	S:
+
+What is the average daily revenue in January? (statistic by time period)
+	M: Revenue
+	F:
+	SF:
+	R: 2017-01-01 to 2017-01-31
+	P: Daily
+	O:
+	S: Average
+
+	Visual:
+		1. Average revenue of each day in January
+		2. Variance and range of daily revenue
+
+What is the average daily revenue by bank in January? (statistic by factor by time period)
+	M: Revenue
+	F: Bank
+	SF:
+	R: 2017-01-01 to 2017-01-31
+	P: Daily
+	O:
+	S: Average
+
+What is the average daily revenue for gold members in January? (statistic by specific factor by time period)
+	M: Revenue
+	F: 
+	SF: Club Level (specific factor)
+	R: 2017-01-01 to 2017-01-31
+	P: Daily
+	O:
+	S: Average
+
+What is the revenue by bank by club level? (metric by multi-factor)
+	M: Revenue
+	F: Bank, Club Level
+	SF: 
+	R: 
+	P:
+ 	O: 
+	S: 
+
+What is the revenue for gold members playing Nascar games? (metric by multi-specific factor)
+	M: Revenue
+	F:
+	SF: Gold Member, Nascar Games
+	R:
+	P: 
+	O: 
+	S: 
+	
+1. There is always a metric (revert to default if left out)
+2. There is always a time range (revert to default if left out)
+2. There is always a time period for a statistic (can have default is left out)
+		
+	
+

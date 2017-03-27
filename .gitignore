@@ -94,6 +94,7 @@ f-env/
 
 # data
 *.csv
+*.zip
 
 # JSON
 *.json
